@@ -319,26 +319,6 @@ docker build -t lorebound-backend .
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass (`python -m pytest`)
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- **Documentation**: Check the `/docs` endpoint when running locally
-- **Issues**: Create GitHub issues for bugs or feature requests
-- **Health Check**: Monitor `/healthz` for system status
 
 ## 🔗 Related Resources
 
@@ -346,3 +326,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
 - [Celery Documentation](https://docs.celeryproject.org/)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+
