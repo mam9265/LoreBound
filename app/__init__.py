@@ -1,1 +1,0 @@
-"""LoreBound Backend Application."""
