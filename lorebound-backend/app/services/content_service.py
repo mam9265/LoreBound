@@ -49,7 +49,7 @@ class ContentService:
         logger.info("Fetching available dungeons")
 
         try:
-            dungeons = await self.content_repo.get_all_dungeons(session)
+            dungeons = await self.content_repo.get_all_dungeons()
             return [DungeonResponse.model_validate(dungeon) for dungeon in dungeons]
 
         except Exception as e:
@@ -60,7 +60,7 @@ class ContentService:
         """Get specific dungeon by ID."""
         logger.info(f"Fetching dungeon: {dungeon_id}")
 
-        dungeon = await self.content_repo.get_dungeon_by_id(dungeon_id, session)
+        dungeon = await self.content_repo.get_dungeon_by_id(dungeon_id)
         if not dungeon:
             raise DungeonNotFoundError(f"Dungeon not found: {dungeon_id}")
 
@@ -82,7 +82,7 @@ class ContentService:
 
         try:
             # Get dungeon to determine category and difficulty
-            dungeon = await self.content_repo.get_dungeon_by_id(dungeon_id, session)
+            dungeon = await self.content_repo.get_dungeon_by_id(dungeon_id)
             if not dungeon:
                 raise DungeonNotFoundError(f"Dungeon not found: {dungeon_id}")
 
@@ -139,7 +139,7 @@ class ContentService:
 
     async def refresh_question_pool(
         self,
-        category: Optional[DungeonCategory] = None,
+        category: Optional[str] = None,
         batch_size: int = 50,
         session: AsyncSession = None
     ) -> int:
@@ -151,7 +151,16 @@ class ContentService:
 
         try:
             total_added = 0
-            categories_to_fetch = [category] if category else list(DungeonCategory)
+            
+            # Convert string category to enum if provided
+            if category:
+                # Validate category string
+                valid_categories = [cat.value for cat in DungeonCategory]
+                if category not in valid_categories:
+                    raise ContentError(f"Invalid category: {category}. Valid options: {valid_categories}")
+                categories_to_fetch = [DungeonCategory(category)]
+            else:
+                categories_to_fetch = list(DungeonCategory)
 
             async with self.trivia_client:
                 for cat in categories_to_fetch:
@@ -168,9 +177,8 @@ class ContentService:
                             # Convert and store questions
                             for ext_q in external_questions:
                                 # Check if question already exists (prevent duplicates)
-                                existing = await self.content_repo.get_question_by_hash(
-                                    self._hash_question(ext_q.question), session
-                                )
+                                question_hash = self._hash_question(ext_q.question)
+                                existing = await self.content_repo.get_question_by_hash(question_hash, session)
                                 
                                 if not existing:
                                     await self._store_external_question(ext_q, cat, difficulty, session)
@@ -180,11 +188,17 @@ class ContentService:
                             logger.warning(f"Failed to fetch questions for {cat.value}/{difficulty.value}: {e}")
                             continue
 
+            # Commit all the new questions to database
+            if session:
+                await session.commit()
+            
             logger.info(f"Successfully added {total_added} new questions to pool")
             return total_added
 
         except Exception as e:
             logger.error(f"Failed to refresh question pool: {e}")
+            if session:
+                await session.rollback()
             raise ContentError(f"Failed to refresh question pool: {e}")
 
     async def _get_deterministic_questions(
@@ -250,7 +264,7 @@ class ContentService:
 
                     # Check if this question is already in existing set
                     question_hash = self._hash_question(ext_q.question)
-                    if any(self._hash_question(q.question_text) == question_hash for q in existing_questions):
+                    if any(self._hash_question(q.prompt) == question_hash for q in existing_questions):
                         continue
 
                     # Store and add to result
@@ -293,8 +307,23 @@ class ContentService:
             }
         )
 
+        # Get dungeon for this category
+        dungeons = await self.content_repo.get_dungeons_by_category(category)
+        if not dungeons:
+            raise ContentError(f"No dungeons found for category: {category}")
+        
+        # Use first dungeon of this category
+        dungeon = dungeons[0]
+        
         # Store in database
-        return await self.content_repo.create_question(question_data, session)
+        return await self.content_repo.create_question(
+            dungeon_id=dungeon.id,
+            prompt=external_question.question,
+            choices=all_choices,
+            answer_index=correct_choice_index,
+            difficulty=difficulty,
+            tags=[category.value, difficulty.value, "external_api"]
+        )
 
     async def _generate_daily_challenge(
         self,

@@ -4,7 +4,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, date
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, func, text
 from sqlalchemy.orm import selectinload
 
 from ..domain.models import (
@@ -66,6 +66,65 @@ class ContentRepository:
         
         result = await self.session.execute(query)
         return list(result.scalars().all())
+
+    async def get_questions_by_category_and_difficulty(
+        self,
+        category: DungeonCategory,
+        difficulty: QuestionDifficulty,
+        session: AsyncSession = None
+    ) -> List[Question]:
+        """Get questions by category and difficulty."""
+        query = select(Question).where(
+            and_(
+                Question.dungeon_id.in_(
+                    select(Dungeon.id).where(Dungeon.category == category)
+                ),
+                Question.difficulty == difficulty
+            )
+        )
+        
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def get_question_by_hash(self, question_hash: str, session: AsyncSession = None) -> Optional[Question]:
+        """Get question by hash to prevent duplicates."""
+        # For now, we'll use prompt as a simple hash check
+        # In production, you might want to add a hash column to the questions table
+        query = select(Question).where(Question.prompt == question_hash)
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
+
+    async def get_daily_challenge_by_date(self, challenge_date) -> Optional[DailyChallenge]:
+        """Get daily challenge for a specific date."""
+        result = await self.session.execute(
+            select(DailyChallenge)
+            .options(selectinload(DailyChallenge.dungeon))
+            .where(func.date(DailyChallenge.date) == challenge_date)
+        )
+        return result.scalar_one_or_none()
+
+    async def create_question(
+        self,
+        dungeon_id: UUID,
+        prompt: str,
+        choices: List[str],
+        answer_index: int,
+        difficulty: QuestionDifficulty,
+        tags: List[str] = None
+    ) -> Question:
+        """Create a new question."""
+        question = Question(
+            dungeon_id=dungeon_id,
+            prompt=prompt,
+            choices=choices,
+            answer_index=answer_index,
+            difficulty=difficulty,
+            tags=tags or []
+        )
+        self.session.add(question)
+        await self.session.flush()
+        await self.session.refresh(question)
+        return question
 
     async def get_question_by_id(self, question_id: UUID) -> Optional[Question]:
         """Get question by ID."""
