@@ -41,9 +41,7 @@ Production-ready FastAPI backend for LoreBound, a mobile trivia RPG game.
 ### Docker Development
 
 Start all services:
-```bash
-make up
-```
+docker-compose up
 
 This will start:
 - **API Server** on http://localhost:8000
@@ -52,14 +50,11 @@ This will start:
 - **Celery Worker** for background jobs
 
 View logs:
-```bash
-make logs
-```
+docker-compose logs
 
 Stop services:
-```bash
-make down
-```
+docker-compose down
+
 
 ### API Documentation
 
@@ -67,61 +62,6 @@ Once running, visit:
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 - **Health Check**: http://localhost:8000/healthz
-
-## Development
-
-### Local Setup
-
-Install dependencies:
-```bash
-make install
-```
-
-Run locally (requires PostgreSQL and Redis running):
-```bash
-make dev
-```
-
-### Code Quality
-
-Format code:
-```bash
-make fmt
-```
-
-Run linting:
-```bash
-make lint
-```
-
-Run tests:
-```bash
-make test
-```
-
-### Database
-
-Run migrations:
-```bash
-make migrate
-```
-
-Load seed data:
-```bash
-make seed
-```
-
-### Available Make Commands
-
-- `make up` - Start all services
-- `make down` - Stop all services  
-- `make logs` - View logs
-- `make test` - Run tests
-- `make lint` - Run linting
-- `make fmt` - Format code
-- `make migrate` - Run database migrations
-- `make seed` - Load seed data
-- `make clean` - Clean up containers and volumes
 
 ## API Endpoints
 
@@ -210,25 +150,7 @@ Key configuration (see `.env.example`):
 - `APPLE_TEAM_ID`, `APPLE_CLIENT_ID` - Apple Sign-In config
 - `SENTRY_DSN` - Error tracking (optional)
 
-### Production Deployment
 
-The application is containerized and ready for deployment on:
-- **AWS ECS/Fargate** 
-- **Google Cloud Run**
-- **Kubernetes**
-- **Docker Swarm**
 
-Key considerations:
-- Use managed PostgreSQL and Redis services
-- Store secrets in secure secret management
-- Configure proper logging and monitoring
-- Set up health checks and auto-scaling
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with tests
-4. Run `make lint` and `make test`
-5. Submit a pull request
 
