@@ -71,7 +71,6 @@ LoreBound is an innovative trivia RPG that combines knowledge-based gameplay wit
    ```
 
 5. **Access the API**
-   - API: http://localhost:8000
    - Documentation: http://localhost:8000/docs
    - Health Check: http://localhost:8000/healthz
 
@@ -326,4 +325,5 @@ docker-compose -f docker-compose.prod.yml up -d
 - [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
 - [Celery Documentation](https://docs.celeryproject.org/)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+
 
