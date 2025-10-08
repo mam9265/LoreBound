@@ -1,0 +1,15 @@
+# ninja log v5
+159	6611	0	C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/CMakeFiles/cmake.verify_globs	d042efa5d13bf0ad
+25	31494	7816607113863940	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/dca283492ab4dd0876fd5b99e2a8216a/source/codegen/jni/react/renderer/components/safeareacontext/EventEmitters.cpp.o	19772dd93ad9d4db
+11	35319	7816607151112648	CMakeFiles/appmodules.dir/OnLoad.cpp.o	92861c64bc5561c2
+39	37999	7816607178557367	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/33453772bd14583f78bb8b4a9348f3e6/common/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewState.cpp.o	186264fdcc8aaf90
+32	43145	7816607230268479	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/f0559a6cfe7832e8ab0f80f3283bfb39/codegen/jni/react/renderer/components/safeareacontext/ComponentDescriptors.cpp.o	571dccf6cdd8f8dd
+2	46072	7816607258573789	CMakeFiles/appmodules.dir/C_/Lorebound/android/app/build/generated/autolinking/src/main/jni/autolinking.cpp.o	19c2173206e9a34
+18	47051	7816607265321903	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/5122d49aa92deb3ec066a536616f809e/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewShadowNode.cpp.o	cded11264f2eea8c
+31607	48571	7816607282601976	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/dca283492ab4dd0876fd5b99e2a8216a/source/codegen/jni/react/renderer/components/safeareacontext/States.cpp.o	858697288a59fcb4
+35321	61285	7816607409816941	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/dca283492ab4dd0876fd5b99e2a8216a/source/codegen/jni/react/renderer/components/safeareacontext/ShadowNodes.cpp.o	ddd1e1c85c35c8f6
+43145	62610	7816607423019185	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/33453772bd14583f78bb8b4a9348f3e6/android/build/generated/source/codegen/jni/safeareacontext-generated.cpp.o	ded309c5524fc7b5
+38000	64415	7816607441835855	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/c0cd4fe57a617a0401b49011bfd2b675/generated/source/codegen/jni/react/renderer/components/safeareacontext/Props.cpp.o	6aeac3b15983056c
+46219	65345	7816607451526065	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/e532ed04e9fdf458a60bfa48548543a9/jni/react/renderer/components/safeareacontext/safeareacontextJSI-generated.cpp.o	642e550465a90673
+65346	66971	7816607466835844	C:/Lorebound/android/app/build/intermediates/cxx/Debug/3h322c4l/obj/arm64-v8a/libreact_codegen_safeareacontext.so	e3bf078db3cb497b
+66972	68114	7816607478421152	C:/Lorebound/android/app/build/intermediates/cxx/Debug/3h322c4l/obj/arm64-v8a/libappmodules.so	91a946567ca033a

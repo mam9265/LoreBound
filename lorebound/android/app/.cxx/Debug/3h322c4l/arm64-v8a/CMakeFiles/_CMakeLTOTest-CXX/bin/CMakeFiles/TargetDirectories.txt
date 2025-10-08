@@ -1,0 +1,4 @@
+C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/foo.dir
+C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/boo.dir
+C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/edit_cache.dir
+C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/rebuild_cache.dir
