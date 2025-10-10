@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/Labadmin/Documents/React Projects/Lorebound/lorebound/node_modules/react-native-safe-area-context/android/src/main/jni
+# Install script for directory: C:/Lorebound/node_modules/react-native-safe-area-context/android/src/main/jni
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

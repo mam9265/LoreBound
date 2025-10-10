@@ -40,6 +40,12 @@ coverage/
 .cache/
 .parcel-cache/
 
+# Android build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/app/.cxx/
+
 # === Python backend (if applicable) ===
 __pycache__/
 *.py[cod]
