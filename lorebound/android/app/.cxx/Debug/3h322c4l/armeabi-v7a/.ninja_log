@@ -1,15 +1,21 @@
 # ninja log v5
-64	608	0	C:/Lorebound/android/app/.cxx/Debug/3h322c4l/armeabi-v7a/CMakeFiles/cmake.verify_globs	58cabde3a4471213
+2	78	0	C:/Lorebound/android/app/.cxx/Debug/3h322c4l/armeabi-v7a/CMakeFiles/cmake.verify_globs	58cabde3a4471213
+28239	51058	7816608754971315	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/e532ed04e9fdf458a60bfa48548543a9/jni/react/renderer/components/safeareacontext/safeareacontextJSI-generated.cpp.o	f873f67db80c531e
 32	22062	7816608465634959	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/dca283492ab4dd0876fd5b99e2a8216a/source/codegen/jni/react/renderer/components/safeareacontext/EventEmitters.cpp.o	5f0ab285360f05bf
-11	28238	7816608526473734	CMakeFiles/appmodules.dir/OnLoad.cpp.o	298e36125435db9a
 25	28520	7816608529026391	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/33453772bd14583f78bb8b4a9348f3e6/common/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewState.cpp.o	5706de567deb7fe1
+22075	53114	7816608776174055	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/dca283492ab4dd0876fd5b99e2a8216a/source/codegen/jni/react/renderer/components/safeareacontext/Props.cpp.o	61d7ff3d89cb6377
+34	9955	7818088343868294	CMakeFiles/appmodules.dir/OnLoad.cpp.o	298e36125435db9a
 38	35703	7816608600549226	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/f0559a6cfe7832e8ab0f80f3283bfb39/codegen/jni/react/renderer/components/safeareacontext/ComponentDescriptors.cpp.o	6419a9826bfabde9
 18	36830	7816608610331609	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/5122d49aa92deb3ec066a536616f809e/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewShadowNode.cpp.o	9dbf2f7f39edded7
-2	39728	7816608641624566	CMakeFiles/appmodules.dir/C_/Lorebound/android/app/build/generated/autolinking/src/main/jni/autolinking.cpp.o	dfdc93c7a779e950
-28239	51058	7816608754971315	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/e532ed04e9fdf458a60bfa48548543a9/jni/react/renderer/components/safeareacontext/safeareacontextJSI-generated.cpp.o	f873f67db80c531e
-22075	53114	7816608776174055	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/dca283492ab4dd0876fd5b99e2a8216a/source/codegen/jni/react/renderer/components/safeareacontext/Props.cpp.o	61d7ff3d89cb6377
+42	13691	7818088382456585	CMakeFiles/appmodules.dir/C_/Lorebound/android/app/build/generated/autolinking/src/main/jni/autolinking.cpp.o	dfdc93c7a779e950
 35705	53730	7816608782793059	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/dca283492ab4dd0876fd5b99e2a8216a/source/codegen/jni/react/renderer/components/safeareacontext/States.cpp.o	fd65a9b2a6858836
 28671	57249	7816608816541540	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/dca283492ab4dd0876fd5b99e2a8216a/source/codegen/jni/react/renderer/components/safeareacontext/ShadowNodes.cpp.o	54ab6fa7bf96d114
 36831	57973	7816608826524747	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/33453772bd14583f78bb8b4a9348f3e6/android/build/generated/source/codegen/jni/safeareacontext-generated.cpp.o	1f9fa4f316c52eba
 57974	61032	7816608852454984	C:/Lorebound/android/app/build/intermediates/cxx/Debug/3h322c4l/obj/armeabi-v7a/libreact_codegen_safeareacontext.so	3231c74638154a96
-61033	62914	7816608870459027	C:/Lorebound/android/app/build/intermediates/cxx/Debug/3h322c4l/obj/armeabi-v7a/libappmodules.so	6057b6f2d8ba6f0e
+13691	14630	7818088391913077	C:/Lorebound/android/app/build/intermediates/cxx/Debug/3h322c4l/obj/armeabi-v7a/libappmodules.so	6057b6f2d8ba6f0e
+83	2115	7818092525679424	build.ninja	cee56eec8a0782e5
+3	701	0	C:/Lorebound/android/app/.cxx/Debug/3h322c4l/armeabi-v7a/CMakeFiles/cmake.verify_globs	58cabde3a4471213
+4	254	0	C:/Lorebound/android/app/.cxx/Debug/3h322c4l/armeabi-v7a/CMakeFiles/cmake.verify_globs	58cabde3a4471213
+18	208	0	C:/Lorebound/android/app/.cxx/Debug/3h322c4l/armeabi-v7a/CMakeFiles/cmake.verify_globs	58cabde3a4471213
+3	117	0	C:/Lorebound/android/app/.cxx/Debug/3h322c4l/armeabi-v7a/CMakeFiles/cmake.verify_globs	58cabde3a4471213
+6	110	0	C:/Lorebound/android/app/.cxx/Debug/3h322c4l/armeabi-v7a/CMakeFiles/cmake.verify_globs	58cabde3a4471213

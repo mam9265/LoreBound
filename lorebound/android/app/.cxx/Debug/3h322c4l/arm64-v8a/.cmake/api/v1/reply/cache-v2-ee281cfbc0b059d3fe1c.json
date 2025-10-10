@@ -187,7 +187,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "c:/Users/Labadmin/Documents/React Projects/Lorebound/lorebound/android/app/.cxx/Debug/y1c1u321/arm64-v8a"
+			"value" : "c:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a"
 		},
 		{
 			"name" : "CMAKE_CACHE_MAJOR_VERSION",
@@ -260,22 +260,6 @@
 			],
 			"type" : "INTERNAL",
 			"value" : "C:/Users/Labadmin/AppData/Local/Android/Sdk/cmake/3.22.1/bin/ctest.exe"
-		},
-		{
-			"name" : "CMAKE_CXX_COMPILER",
-			"properties" : 
-			[
-				{
-					"name" : "ADVANCED",
-					"value" : "1"
-				},
-				{
-					"name" : "HELPSTRING",
-					"value" : "(This variable does not exist and should not be used)"
-				}
-			],
-			"type" : "UNINITIALIZED",
-			"value" : ""
 		},
 		{
 			"name" : "CMAKE_CXX_COMPILER_AR",
@@ -404,22 +388,6 @@
 			],
 			"type" : "STRING",
 			"value" : "-latomic -lm"
-		},
-		{
-			"name" : "CMAKE_C_COMPILER",
-			"properties" : 
-			[
-				{
-					"name" : "ADVANCED",
-					"value" : "1"
-				},
-				{
-					"name" : "HELPSTRING",
-					"value" : "(This variable does not exist and should not be used)"
-				}
-			],
-			"type" : "UNINITIALIZED",
-			"value" : ""
 		},
 		{
 			"name" : "CMAKE_C_COMPILER_AR",
@@ -691,7 +659,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\Labadmin\\Documents\\React Projects\\Lorebound\\lorebound\\android\\app\\.cxx\\Debug\\y1c1u321\\prefab\\arm64-v8a\\prefab"
+			"value" : "C:\\Lorebound\\android\\app\\.cxx\\Debug\\3h322c4l\\prefab\\arm64-v8a\\prefab"
 		},
 		{
 			"name" : "CMAKE_GENERATOR",
@@ -751,7 +719,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "C:/Users/Labadmin/Documents/React Projects/Lorebound/lorebound/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup"
+			"value" : "C:/Lorebound/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup"
 		},
 		{
 			"name" : "CMAKE_INSTALL_PREFIX",
@@ -787,7 +755,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\Labadmin\\Documents\\React Projects\\Lorebound\\lorebound\\android\\app\\build\\intermediates\\cxx\\Debug\\y1c1u321\\obj\\arm64-v8a"
+			"value" : "C:\\Lorebound\\android\\app\\build\\intermediates\\cxx\\Debug\\3h322c4l\\obj\\arm64-v8a"
 		},
 		{
 			"name" : "CMAKE_LINKER",
@@ -1059,7 +1027,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\Labadmin\\Documents\\React Projects\\Lorebound\\lorebound\\android\\app\\build\\intermediates\\cxx\\Debug\\y1c1u321\\obj\\arm64-v8a"
+			"value" : "C:\\Lorebound\\android\\app\\build\\intermediates\\cxx\\Debug\\3h322c4l\\obj\\arm64-v8a"
 		},
 		{
 			"name" : "CMAKE_SHARED_LINKER_FLAGS",
@@ -1299,11 +1267,11 @@
 			[
 				{
 					"name" : "HELPSTRING",
-					"value" : "The CMake toolchain file"
+					"value" : "No help, variable specified on the command line."
 				}
 			],
-			"type" : "FILEPATH",
-			"value" : "C:/Users/Labadmin/AppData/Local/Android/Sdk/ndk/29.0.14206865/build/cmake/android.toolchain.cmake"
+			"type" : "UNINITIALIZED",
+			"value" : "C:\\Users\\Labadmin\\AppData\\Local\\Android\\Sdk\\ndk\\29.0.14206865\\build\\cmake\\android.toolchain.cmake"
 		},
 		{
 			"name" : "CMAKE_VERBOSE_MAKEFILE",
@@ -1331,7 +1299,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\Labadmin\\Documents\\React Projects\\Lorebound\\lorebound\\android\\app\\build"
+			"value" : "C:\\Lorebound\\android\\app\\build"
 		},
 		{
 			"name" : "PROJECT_ROOT_DIR",
@@ -1343,7 +1311,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\Labadmin\\Documents\\React Projects\\Lorebound\\lorebound\\android"
+			"value" : "C:\\Lorebound\\android"
 		},
 		{
 			"name" : "REACT_ANDROID_DIR",
@@ -1355,7 +1323,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "C:\\Users\\Labadmin\\Documents\\React Projects\\Lorebound\\lorebound\\node_modules\\react-native\\ReactAndroid"
+			"value" : "C:\\Lorebound\\node_modules\\react-native\\ReactAndroid"
 		},
 		{
 			"name" : "ReactAndroid_DIR",
@@ -1367,7 +1335,7 @@
 				}
 			],
 			"type" : "PATH",
-			"value" : "C:/Users/Labadmin/Documents/React Projects/Lorebound/lorebound/android/app/.cxx/Debug/y1c1u321/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/ReactAndroid"
+			"value" : "C:/Lorebound/android/app/.cxx/Debug/3h322c4l/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/ReactAndroid"
 		},
 		{
 			"name" : "appmodules_BINARY_DIR",
@@ -1379,7 +1347,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/Users/Labadmin/Documents/React Projects/Lorebound/lorebound/android/app/.cxx/Debug/y1c1u321/arm64-v8a"
+			"value" : "C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a"
 		},
 		{
 			"name" : "appmodules_IS_TOP_LEVEL",
@@ -1403,7 +1371,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/Users/Labadmin/Documents/React Projects/Lorebound/lorebound/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup"
+			"value" : "C:/Lorebound/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup"
 		},
 		{
 			"name" : "fbjni_DIR",
@@ -1415,7 +1383,7 @@
 				}
 			],
 			"type" : "PATH",
-			"value" : "C:/Users/Labadmin/Documents/React Projects/Lorebound/lorebound/android/app/.cxx/Debug/y1c1u321/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/fbjni"
+			"value" : "C:/Lorebound/android/app/.cxx/Debug/3h322c4l/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/fbjni"
 		}
 	],
 	"kind" : "cache",
