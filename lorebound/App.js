@@ -1,9 +1,31 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Image } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-export default function App() {
-  const [name, setName] = React.useState('');
+const Stack = createNativeStackNavigator();
 
+function DailyChallenge({ navigation  }) {
+  return (
+    <View style={styles.container}>
+      <View style={styles.headerBox}>
+        <Text style={styles.headerText}>Today’s Theme: Music</Text>
+        <Text style={styles.headerSubText}>Time Until Next Challenge: 7 Hours</Text>
+      </View>
+
+      <TouchableOpacity style={styles.playButton}>
+        <Text style={styles.playText}>PLAY</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.playButton, {backgroundColor: '#19376d', marginTop: 10 }]} onPress={() => navigation.goBack()}>
+        <Text style={styles.playText}>Back</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function MainMenu({ navigation }) {
   return (
     <View style={styles.container}>
       {/* Title */}
@@ -16,7 +38,7 @@ export default function App() {
         <Text style={styles.buttonText}>Dungeon Select</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('DailyChallenge')}>
         <Text style={styles.buttonText}>Daily Challenge</Text>
       </TouchableOpacity>
 
@@ -24,6 +46,17 @@ export default function App() {
         <Text style={styles.buttonText}>Leaderboards</Text>
       </TouchableOpacity>
     </View>
+  );
+}
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="MainMenu" component={MainMenu} />
+        <Stack.Screen name="DailyChallenge" component={DailyChallenge} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
@@ -66,5 +99,32 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontFamily: 'serif',
     textTransform: 'capitalize',
+  },
+  headerBox: {
+    backgroundColor: '#19376d',
+    padding: 20,
+    borderRadius: 4,
+    marginBottom: 20,
+  },
+  headerText: {
+    color: 'white',
+    fontSize: 26,
+    textAlign: 'center',
+    fontFamily: 'serif',
+  },
+  headerSubText: {
+    color: 'white',
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 5,
+  },
+  playButton: {
+    backgroundColor: '#5260e0',
+    marginTop: 10
+  },
+  playText: {
+    color: 'white',
+    fontSize: 20,
+    fontFamily: 'serif',
   },
 });
