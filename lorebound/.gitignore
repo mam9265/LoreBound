@@ -21,10 +21,6 @@ build/
 .DS_Store
 Thumbs.db
 
-# iOS build artifacts
-ios/build/
-ios/Pods/
-
 # Logs
 logs
 *.log
