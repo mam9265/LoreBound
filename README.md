@@ -256,6 +256,8 @@ python -m pytest --cov=app tests/
 python scripts/test_registration.py
 ```
 
+#For Testing We are using the Pixel 9 Pro XL emulator found in Android Studio
+
 ## 📈 Monitoring & Health Checks
 
 - **Health Endpoint**: `/healthz` - Basic health check
@@ -325,5 +327,6 @@ docker-compose -f docker-compose.prod.yml up -d
 - [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
 - [Celery Documentation](https://docs.celeryproject.org/)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+
 
 
