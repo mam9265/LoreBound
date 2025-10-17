@@ -1,21 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Image } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-const Stack = createNativeStackNavigator();
-
-function DungeonSelect({ navigation}) {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Dungeon Select</Text>
-      <TouchableOpacity style={styles.DungeonButton}>
-        <Text style={styles.DungeonSelectText}>Sports Dungeon</Text>
-        <Text style={styles.DungeonSelectText}>6/30 Floors Cleared</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 
 function DailyChallenge({ navigation  }) {
   return (
@@ -35,42 +19,6 @@ function DailyChallenge({ navigation  }) {
         <Text style={styles.playText}>BACK</Text>
       </TouchableOpacity>
     </View>
-  );
-}
-
-function MainMenu({ navigation }) {
-  return (
-    <View style={styles.container}>
-      {/* Title */}
-      <Text style={styles.title}>
-        <Text style={styles.lore}>Lore</Text>
-        <Text style={styles.bound}>Bound</Text>
-      </Text>
-      {/* Buttons */}
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('DungeonSelect')}>
-        <Text style={styles.buttonText}>Dungeon Select</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('DailyChallenge')}>
-        <Text style={styles.buttonText}>Daily Challenge</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.smallButton}>
-        <Text style={styles.buttonText}>Leaderboards</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-export default function App() {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="MainMenu" component={MainMenu} />
-        <Stack.Screen name="DailyChallenge" component={DailyChallenge} />
-        <Stack.Screen name="DungeonSelect" component={DungeonSelect} />
-      </Stack.Navigator>
-    </NavigationContainer>
   );
 }
 
