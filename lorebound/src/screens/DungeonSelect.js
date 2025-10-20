@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
-import styles from '../styles/Styles';
+import styles from './Styles';
 
 function DungeonSelect({ navigation}) {
   const dungeons = [
@@ -22,6 +22,12 @@ function DungeonSelect({ navigation}) {
             <Text style={styles.dungeonFloors}>Floors Cleared: {dungeon.floors}</Text>
           </TouchableOpacity>
         ))}
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={() => navigation.navigate('MainMenu')}
+        >
+          <Text style={styles.dungeonFloors}>Back to Home</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
