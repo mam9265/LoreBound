@@ -17,6 +17,7 @@ export default function App() {
         <Stack.Screen name="MainMenu" component={MainMenu} />
         <Stack.Screen name="DailyChallenge" component={DailyChallenge} />
         <Stack.Screen name="DungeonSelect" component={DungeonSelect} />
+        <Stack.Screen name="CharacterCustomization" component={CharacterCustomization} />
       </Stack.Navigator>
     </NavigationContainer>
   );

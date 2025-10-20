@@ -22,6 +22,11 @@ function MainMenu({ navigation }) {
       <TouchableOpacity style={styles.smallButton}>
         <Text style={styles.buttonText}>Leaderboards</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('CharacterCustomization')}>
+        <Text style={styles.buttonText}>Character Customization</Text>
+      </TouchableOpacity>
+
     </View>
   );
 }
