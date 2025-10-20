@@ -1,97 +1,283 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# LoreBound - React Native Frontend
 
-# Getting Started
+A trivia RPG mobile game built with React Native, featuring dungeon exploration and daily challenges.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 📱 About
 
-## Step 1: Start Metro
+LoreBound is a mobile trivia game where players explore themed dungeons, answer questions, and compete on leaderboards. The app features user authentication, multiple game modes, and integration with a FastAPI backend.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 🏗️ Project Structure
 
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+```
+lorebound/
+├── src/                    # Source code
+│   ├── screens/           # Screen components
+│   ├── services/          # API & business logic
+│   ├── config/            # Configuration
+│   └── styles/            # Styling
+├── docs/                  # Documentation
+├── android/               # Android native code
+├── ios/                   # iOS native code
+└── __tests__/             # Tests
 ```
 
-## Step 2: Build and run your app
+📖 **[View Detailed Structure](./PROJECT_STRUCTURE.md)**
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+## ✨ Features
+
+- 🔐 **User Authentication** - Login and registration with JWT tokens
+- 🏰 **Dungeon Select** - Multiple themed trivia dungeons
+- 📅 **Daily Challenge** - New challenge every day
+- 🎮 **Game Sessions** - Track progress and scores
+- 🏆 **Leaderboards** - Compete with other players
+- 📊 **User Profiles** - View stats and achievements
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js >= 20
+- React Native development environment set up
+- Android Studio (for Android) or Xcode (for iOS)
+- FastAPI backend running (see backend repo)
+
+### Installation
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Install iOS dependencies (Mac only):**
+   ```bash
+   cd ios
+   bundle install
+   bundle exec pod install
+   cd ..
+   ```
+
+3. **Configure API endpoint:**
+   
+   The app automatically configures the correct API URL:
+   - Android Emulator: `http://10.0.2.2:8000`
+   - iOS Simulator: `http://localhost:8000`
+   - Physical Device: Update `src/config/config.js` with your computer's IP
+
+### Running the App
+
+1. **Start Metro bundler:**
+   ```bash
+   npm start
+   ```
+
+2. **Run on Android:**
+   ```bash
+   npm run android
+   ```
+
+3. **Run on iOS:**
+   ```bash
+   npm run ios
+   ```
+
+## 🔌 Backend Connection
+
+The app connects to a FastAPI backend for authentication and game data.
+
+### Setup Instructions
+
+1. Start the backend server:
+   ```bash
+   cd lorebound-backend
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+2. The frontend will automatically connect to:
+   - **Development**: `http://localhost:8000` (iOS) or `http://10.0.2.2:8000` (Android)
+   - **Production**: Configure in `src/config/config.js`
+
+📖 **[Detailed Setup Guide](./docs/SETUP_BACKEND_CONNECTION.md)**
+
+## 📚 Documentation
+
+- **[Project Structure](./PROJECT_STRUCTURE.md)** - Detailed directory organization
+- **[Backend Connection](./docs/SETUP_BACKEND_CONNECTION.md)** - API setup and configuration
+- **[Authentication Usage](./docs/AUTH_USAGE_EXAMPLES.md)** - How to use auth in your code
+- **[Connection Summary](./docs/CONNECTION_SUMMARY.md)** - Overview of frontend-backend integration
+- **[Gradle Fix](./docs/GRADLE_FIX.md)** - Android Gradle configuration
+
+## 🛠️ Development
+
+### Project Structure
+
+```
+src/
+├── screens/          # Screen components (AuthScreen, MainMenu, etc.)
+├── services/         # API services and utilities
+│   ├── api.js       # HTTP client and API calls
+│   └── authUtils.js # Authentication helpers
+├── config/          # App configuration
+│   └── config.js    # API URLs and settings
+└── styles/          # Global styles
+    └── Styles.js    # StyleSheet definitions
+```
+
+### Adding a New Screen
+
+1. Create file in `src/screens/NewScreen.js`
+2. Add to `src/screens/index.js`
+3. Register route in `App.js`
+
+Example:
+```javascript
+// src/screens/LeaderboardScreen.js
+import React from 'react';
+import { View, Text } from 'react-native';
+import styles from '../styles/Styles';
+
+function LeaderboardScreen({ navigation }) {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Leaderboard</Text>
+    </View>
+  );
+}
+
+export default LeaderboardScreen;
+```
+
+### Making API Calls
+
+```javascript
+import { ApiService, AuthUtils } from './src/services';
+
+// Authenticated request with automatic token refresh
+const data = await AuthUtils.authenticatedRequest(async (token) => {
+  const response = await fetch(`${API_BASE_URL}/v1/some-endpoint`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  return await response.json();
+});
+```
+
+## 🧪 Testing
+
+```bash
+# Run tests
+npm test
+
+# Run tests with coverage
+npm test -- --coverage
+
+# Run specific test
+npm test AuthScreen
+```
+
+## 📦 Building for Production
 
 ### Android
 
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```bash
+cd android
+./gradlew assembleRelease
 ```
+
+APK will be at: `android/app/build/outputs/apk/release/app-release.apk`
 
 ### iOS
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+1. Open `ios/lorebound.xcworkspace` in Xcode
+2. Select "Product" → "Archive"
+3. Follow App Store submission process
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## 🔧 Troubleshooting
 
-```sh
-bundle install
+### Common Issues
+
+**"Network request failed"**
+- Check backend is running
+- Verify API URL in `src/config/config.js`
+- Check device/emulator can reach the backend
+
+**Android Gradle errors**
+- See [Gradle Fix Guide](./docs/GRADLE_FIX.md)
+- Clean build: `cd android && ./gradlew clean`
+
+**Metro bundler issues**
+- Clear cache: `npm start -- --reset-cache`
+- Delete node_modules: `rm -rf node_modules && npm install`
+
+**iOS build errors**
+- Clean build folder: Cmd+Shift+K in Xcode
+- Reinstall pods: `cd ios && pod install`
+
+### Debug Menu
+
+- **Android**: Shake device or Ctrl+M (Cmd+M on Mac)
+- **iOS**: Shake device or Cmd+D
+
+## 📝 Scripts
+
+```bash
+npm start          # Start Metro bundler
+npm run android    # Run on Android
+npm run ios        # Run on iOS
+npm test          # Run tests
+npm run lint      # Run linter
 ```
 
-Then, and every time you update your native dependencies, run:
+## 🔐 Environment Variables
 
-```sh
-bundle exec pod install
+For sensitive configuration, create `.env`:
+
+```env
+API_BASE_URL=https://api.lorebound.com
+API_TIMEOUT=10000
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## 🎨 Styling
 
-```sh
-# Using npm
-npm run ios
+Global styles are in `src/styles/Styles.js`. Uses React Native StyleSheet API.
 
-# OR using Yarn
-yarn ios
+```javascript
+import styles from './src/styles/Styles';
+
+<View style={styles.container}>
+  <Text style={styles.title}>LoreBound</Text>
+</View>
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## 📱 Supported Platforms
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+- ✅ Android (API 24+)
+- ✅ iOS (14.0+)
 
-## Step 3: Modify your app
+## 🤝 Contributing
 
-Now that you have successfully run the app, let's make changes!
+1. Create a feature branch
+2. Make your changes
+3. Test thoroughly
+4. Submit a pull request
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## 📄 License
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+[Your License Here]
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+## 🔗 Links
 
-## Congratulations! :tada:
+- [React Native Docs](https://reactnative.dev/docs/getting-started)
+- [Backend Repository](../lorebound-backend)
+- [API Documentation](http://localhost:8000/docs)
 
-You've successfully run and modified your React Native App. :partying_face:
+## 💡 Tips
 
-### Now what?
+- Use React Native Debugger for better debugging
+- Enable Fast Refresh for instant feedback
+- Check logs: `npx react-native log-android` or `npx react-native log-ios`
+- Use TypeScript for better type safety (optional migration)
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+---
 
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+**Version:** 0.1.0  
+**React Native:** 0.81.4  
+**Last Updated:** October 19, 2025

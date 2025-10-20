@@ -1,15 +1,43 @@
-# LoreBound - Trivia RPG Backend
+# LoreBound - Trivia RPG Game
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
+[![React Native](https://img.shields.io/badge/React_Native-0.81+-blue.svg)](https://reactnative.dev)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)](https://postgresql.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
 
-A production-ready FastAPI backend for the LoreBound trivia RPG game, featuring user authentication, content management, game runs, and leaderboards.
+A full-stack trivia RPG game with a React Native mobile app and FastAPI backend, featuring user authentication, content management, game runs, and leaderboards.
 
 ## 🎮 About LoreBound
 
 LoreBound is an innovative trivia RPG that combines knowledge-based gameplay with role-playing game elements. Players progress through themed dungeons, answer trivia questions, collect items, and compete on leaderboards.
+
+---
+
+## ⚡ TL;DR - Quick Start for Experienced Developers
+
+```bash
+# 1. Backend (Terminal 1)
+cd lorebound-backend
+mkdir -p secrets
+openssl genrsa -out secrets/jwt_private.pem 2048
+openssl rsa -in secrets/jwt_private.pem -pubout -out secrets/jwt_public.pem
+docker-compose up -d
+docker-compose --profile migration run --rm migrate
+
+# 2. Mobile App (Terminal 2)
+cd lorebound
+npm install
+npm start
+
+# 3. Run App (Terminal 3 - after Metro starts)
+cd lorebound
+npm run android  # or npm run ios (macOS only)
+```
+
+**Verify**: Backend at http://localhost:8000/docs | App launches on emulator
+
+**Note**: Make sure Docker Desktop and Android Studio (with AVD) are running before starting.
 
 ## 🏗️ Architecture Overview
 
@@ -37,42 +65,318 @@ LoreBound is an innovative trivia RPG that combines knowledge-based gameplay wit
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Quick Start
+## 🚀 How to Run the Entire Application
+
+This guide will walk you through running both the **backend** (FastAPI) and the **mobile app** (React Native) for local development and testing.
 
 ### Prerequisites
-- Docker & Docker Compose
-- Python 3.11+
-- PostgreSQL 15+
-- Redis 7+
 
-### Development Setup
+Before you begin, ensure you have the following installed:
 
-1. **Clone the repository**
+#### For Backend:
+- **Docker Desktop** (includes Docker & Docker Compose) - [Download](https://www.docker.com/products/docker-desktop)
+- **Python 3.11+** (optional, for local development without Docker)
+
+#### For Mobile App:
+- **Node.js 20+** - [Download](https://nodejs.org/)
+- **npm** or **yarn** (comes with Node.js)
+- **Android Studio** (for Android development) - [Download](https://developer.android.com/studio)
+  - Make sure to install Android SDK and create an Android Virtual Device (AVD)
+  - Recommended: **Pixel 9 Pro XL** emulator
+- **Xcode** (for iOS development, macOS only) - [Download from App Store](https://apps.apple.com/us/app/xcode/id497799835)
+- **React Native CLI** (will be installed via npx)
+
+---
+
+## 📦 Part 1: Running the Backend
+
+### Step 1: Navigate to the Backend Directory
+
+```bash
+cd lorebound-backend
+```
+
+### Step 2: Generate JWT Keys
+
+The backend requires JWT keys for authentication. Generate them with OpenSSL:
+
+```bash
+# Create secrets directory if it doesn't exist
+mkdir -p secrets
+
+# Generate RSA private key
+openssl genrsa -out secrets/jwt_private.pem 2048
+
+# Generate public key from private key
+openssl rsa -in secrets/jwt_private.pem -pubout -out secrets/jwt_public.pem
+```
+
+### Step 3: Start Backend Services with Docker
+
+Start all backend services (PostgreSQL, Redis, API server, Celery worker):
+
+```bash
+docker-compose up -d
+```
+
+This will start:
+- **PostgreSQL database** on port `5433`
+- **Redis** on port `6379`
+- **FastAPI server** on port `8000`
+- **Celery worker** for background jobs
+
+### Step 4: Run Database Migrations
+
+Initialize the database schema:
+
+```bash
+docker-compose --profile migration run --rm migrate
+```
+
+### Step 5: Verify Backend is Running
+
+Open your browser and check these URLs:
+- **API Documentation (Swagger)**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/healthz
+- **API Base URL**: http://localhost:8000/v1
+
+You should see the API documentation and a healthy status.
+
+### Optional: Seed Sample Data
+
+To populate the database with sample content:
+
+```bash
+docker-compose exec api poetry run python scripts/seed_content_data.py
+```
+
+---
+
+## 📱 Part 2: Running the Mobile App
+
+### Step 1: Navigate to the Mobile App Directory
+
+Open a **new terminal window** (keep the backend running) and navigate to the mobile app:
+
+```bash
+cd lorebound
+```
+
+### Step 2: Install Dependencies
+
+Install all required npm packages:
+
+```bash
+npm install
+```
+
+### Step 3: Configure Backend Connection
+
+The mobile app is already configured to connect to your local backend:
+- ✅ **Android emulator**: Uses `http://10.0.2.2:8000` automatically
+- ✅ **iOS simulator**: Uses `http://localhost:8000` automatically
+
+**Only edit if using a physical device**:
+
+If testing on a real Android/iOS device, update `lorebound/src/config/config.js`:
+
+```javascript
+// Find your computer's local IP address
+// Windows: ipconfig
+// macOS/Linux: ifconfig
+
+// Replace the return statement with your IP:
+return 'http://192.168.x.x:8000';  // Replace with your actual IP
+```
+
+### Step 4: Start Metro Bundler
+
+Start the React Native Metro bundler:
+
+```bash
+npm start
+```
+
+Keep this terminal running. You should see the Metro bundler running.
+
+### Step 5: Run the App
+
+Open **another terminal window** in the `lorebound` directory and run:
+
+#### For Android:
+
+**Option A: Using Android Emulator**
+1. Open Android Studio
+2. Start your Android Virtual Device (AVD) - Recommended: **Pixel 9 Pro XL**
+3. Run the app:
    ```bash
-   git clone <repository-url>
-   cd LoreBound
+   npm run android
    ```
 
-2. **Environment Setup**
+
+```
+---
+
+## ✅ Verification
+
+### Backend Verification
+
+1. **Check API Health**: Visit http://localhost:8000/healthz
+2. **Test Registration**:
    ```bash
-   cd lorebound-backend
-   cp .env.example .env
-   # Edit .env with your configuration
+   curl -X POST http://localhost:8000/v1/auth/register \
+     -H "Content-Type: application/json" \
+     -d '{"email":"test@example.com","password":"Test1234!","display_name":"TestUser"}'
    ```
 
-3. **Start with Docker**
-   ```bash
-   docker-compose up -d
-   ```
+### Mobile App Verification
 
-4. **Run Database Migrations**
-   ```bash
-   docker-compose --profile migration run --rm migrate
-   ```
+1. The app should launch on your emulator/simulator
+2. You should see the authentication screen
+3. Try registering a new user or logging in
+4. Navigate through the app menus
 
-5. **Access the API**
-   - Documentation: http://localhost:8000/docs
-   - Health Check: http://localhost:8000/healthz
+---
+
+## 🛠️ Troubleshooting
+
+### Backend Issues
+
+**Port Already in Use**:
+```bash
+# Stop all containers
+docker-compose down
+
+# Check what's using the port
+# Windows PowerShell:
+netstat -ano | findstr :8000
+
+# Kill the process using the port (replace PID with actual process ID)
+taskkill /PID <PID> /F
+
+# Restart
+docker-compose up -d
+```
+
+**Database Connection Failed**:
+```bash
+# Check database is running
+docker-compose ps
+
+# View logs
+docker-compose logs db
+
+# Restart services
+docker-compose restart
+```
+
+**JWT Key Issues**:
+- Make sure you generated the JWT keys in `lorebound-backend/secrets/`
+- Check file permissions if on macOS/Linux
+
+### Mobile App Issues
+
+**Metro Bundler Issues**:
+```bash
+# Clear cache
+npm start -- --reset-cache
+```
+
+**Android Build Errors**:
+```bash
+# Clean build
+cd android
+./gradlew clean
+cd ..
+
+# Rebuild
+npm run android
+```
+
+**Cannot Connect to Backend**:
+- Verify backend is running at http://localhost:8000/healthz
+- Check `src/config/config.js` has the correct IP address
+- For Android emulator, use `10.0.2.2` instead of `localhost`
+- For physical devices, use your computer's local network IP
+
+
+
+**Node Modules Issues**:
+```bash
+# Remove and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+---
+
+## 🔧 Development Workflow
+
+### Making Backend Changes
+
+1. Edit files in `lorebound-backend/app/`
+2. Changes are automatically reloaded (Docker volume mapping)
+3. View logs: `docker-compose logs -f api`
+
+### Making Mobile App Changes
+
+1. Edit files in `lorebound/src/`
+2. Save the file
+3. Metro bundler will automatically reload
+4. Shake device/emulator and select "Reload" if needed
+
+### Stopping the Application
+
+**Backend**:
+```bash
+cd lorebound-backend
+docker-compose down
+```
+
+**Mobile App**:
+- Press `Ctrl+C` in the Metro bundler terminal
+- Close the emulator/simulator
+
+---
+
+## 📚 Additional Resources
+
+- **Backend Documentation**: See `lorebound-backend/README.md`
+- **API Documentation**: http://localhost:8000/docs (when running)
+- **Architecture Overview**: See `docs/ARCHITECTURE_OVERVIEW.md`
+- **Project Structure**: See `docs/PROJECT_STRUCTURE.md`
+- **React Native Docs**: https://reactnative.dev/docs/getting-started
+
+---
+
+## 🎯 Quick Reference Commands
+
+### Backend
+```bash
+# Start backend
+cd lorebound-backend && docker-compose up -d
+
+# View logs
+docker-compose logs -f api
+
+# Run migrations
+docker-compose --profile migration run --rm migrate
+
+# Stop backend
+docker-compose down
+```
+
+### Mobile App
+```bash
+# Start Metro
+cd lorebound && npm start
+
+# Run Android (new terminal)
+npm run android
+
+# Run iOS (new terminal, macOS only)
+npm run ios
+```
 
 ## 🔧 Services Architecture
 
@@ -255,8 +559,6 @@ python -m pytest --cov=app tests/
 # Test authentication endpoints
 python scripts/test_registration.py
 ```
-
-#For Testing We are using the Pixel 9 Pro XL emulator found in Android Studio
 
 ## 📈 Monitoring & Health Checks
 

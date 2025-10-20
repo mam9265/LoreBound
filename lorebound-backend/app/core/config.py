@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     daily_challenge_reset_hour: int = Field(default=0, alias="DAILY_CHALLENGE_RESET_HOUR")
     
     # Security
-    cors_origins: List[str] = Field(default=["http://localhost:3000"], alias="CORS_ORIGINS")
+    cors_origins: List[str] = Field(default=["*"], alias="CORS_ORIGINS")
     rate_limit_per_minute: int = Field(default=60, alias="RATE_LIMIT_PER_MINUTE")
     
     # Background Jobs
