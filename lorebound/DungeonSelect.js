@@ -22,6 +22,12 @@ function DungeonSelect({ navigation}) {
             <Text style={styles.dungeonFloors}>Floors Cleared: {dungeon.floors}</Text>
           </TouchableOpacity>
         ))}
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={() => navigation.navigate('MainMenu')}
+        >
+          <Text style={styles.dungeonFloors}>Back to Home</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
