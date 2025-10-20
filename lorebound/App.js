@@ -6,6 +6,7 @@ import styles from './Styles';
 import MainMenu from './MainMenu';
 import DailyChallenge from './DailyChallenge';
 import DungeonSelect from './DungeonSelect';
+import CharacterCustomization from './CharacterCustomization';
 
 const Stack = createNativeStackNavigator();
 
