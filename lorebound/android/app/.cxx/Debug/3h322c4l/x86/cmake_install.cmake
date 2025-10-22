@@ -44,6 +44,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
+  include("C:/Lorebound/android/app/.cxx/Debug/3h322c4l/x86/rnasyncstorage_autolinked_build/cmake_install.cmake")
   include("C:/Lorebound/android/app/.cxx/Debug/3h322c4l/x86/safeareacontext_autolinked_build/cmake_install.cmake")
   include("C:/Lorebound/android/app/.cxx/Debug/3h322c4l/x86/rnscreens_autolinked_build/cmake_install.cmake")
 

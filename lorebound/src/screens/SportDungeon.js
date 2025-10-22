@@ -1,15 +1,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
-import styles from './Styles';
+import styles from '../styles/Styles';
 
 
-function DailyChallenge({ navigation  }) {
+function SportDungeon({ navigation  }) {
   return (
     <View style={styles.container}>
       <View style={styles.headerBox}>
         {/* Menu */}
-        <Text style={styles.headerText}>Today’s Theme: Music</Text>
-        <Text style={styles.headerSubText}>Time Until Next Challenge: 7 Hours</Text>
+        <Text style={styles.headerText}>SPORT DUNGEON</Text>
       </View>
       {/* Play Button */}
       <TouchableOpacity style={styles.playButton}>
@@ -24,4 +23,4 @@ function DailyChallenge({ navigation  }) {
   );
 }
 
-export default DailyChallenge;
+export default SportDungeon;

@@ -7,6 +7,7 @@ import AuthScreen from './src/screens/AuthScreen';
 import MainMenu from './src/screens/MainMenu';
 import DailyChallenge from './src/screens/DailyChallenge';
 import DungeonSelect from './src/screens/DungeonSelect';
+import CharacterCustomization from './src/screens/CharacterCustomization';
 
 const Stack = createNativeStackNavigator();
 
@@ -18,6 +19,7 @@ export default function App() {
         <Stack.Screen name="MainMenu" component={MainMenu} />
         <Stack.Screen name="DailyChallenge" component={DailyChallenge} />
         <Stack.Screen name="DungeonSelect" component={DungeonSelect} />
+        <Stack.Screen name="CharacterCustomization" component={CharacterCustomization} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -204,6 +204,52 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
+  header: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  previewContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  characterImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  previewText: {
+    color: '#aaa',
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  equipmentText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  optionGroup: {
+    marginVertical: 10,
+  },
+  optionLabel: {
+    color: '#fff',
+    fontSize: 18,
+    marginBottom: 5,
+  },
+  saveButton: {
+    marginTop: 30,
+    backgroundColor: '#4e9bde',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  saveText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
 });
 
 export default styles;

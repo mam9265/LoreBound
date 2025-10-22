@@ -1,6 +1,9 @@
 C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/CMakeFiles/appmodules.dir
 C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/CMakeFiles/edit_cache.dir
 C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/CMakeFiles/rebuild_cache.dir
+C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir
+C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/rnasyncstorage_autolinked_build/CMakeFiles/edit_cache.dir
+C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/rnasyncstorage_autolinked_build/CMakeFiles/rebuild_cache.dir
 C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir
 C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/safeareacontext_autolinked_build/CMakeFiles/edit_cache.dir
 C:/Lorebound/android/app/.cxx/Debug/3h322c4l/arm64-v8a/safeareacontext_autolinked_build/CMakeFiles/rebuild_cache.dir

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
-import styles from './Styles';
+import styles from '../styles/Styles';
 
 function DungeonSelect({ navigation}) {
   const dungeons = [
