@@ -26,6 +26,7 @@ function MainMenu({ navigation }) {
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('CharacterCustomization')}>
         <Text style={styles.buttonText}>Character Customization</Text>
       </TouchableOpacity>
+
     </View>
   );
 }
