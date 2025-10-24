@@ -1,12 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
 import styles from '../styles/Styles';
-import SportDungeon from './SportDungeon';
-import MusicDungeon from './MusicDungeon';
-import HistoryDungeon from './HistoryDungeon';
-import BookDungeon from './BookDungeon';
-import PopCultureDungeon from './PopCultureDungeon';
-import AllAroundDungeon from './AllAroundDungeon';
 
 function DungeonSelect({ navigation}) {
   const dungeons = [
