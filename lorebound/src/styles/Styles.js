@@ -102,11 +102,50 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: 'serif',
   },
+  scrollContainer: {
+    flexGrow: 1,
+    backgroundColor: '#a5d7e8',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
   // Auth Screen Styles
   authContainer: {
     flex: 1,
     backgroundColor: '#a5d7e8',
   },
+
+  authInnerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+
+  authFormContainer: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+
+  inputContainer: {
+    marginBottom: 15,
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: '#19376d',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+  },
+
   authScrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -129,38 +168,12 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     marginTop: 10,
   },
-  authFormContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
   inputLabel: {
     fontSize: 16,
     color: '#19376d',
     marginBottom: 8,
     fontWeight: '600',
     fontFamily: 'serif',
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#19376d',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#19376d',
   },
   authButton: {
     backgroundColor: '#19376d',
@@ -215,10 +228,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  characterContainer: {
+    width: '95%',
+    backgroundColor: '#a5d7e8',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
   characterImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 10,
+    width: 200,
+    height: 200,
     marginBottom: 10,
   },
   previewText: {
@@ -230,13 +249,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
   },
-  optionGroup: {
+  buttonWrapper: {
+    width: '100%',
     marginVertical: 10,
   },
+  optionGroup: {
+    width: '100%',
+    marginVertical: 10,
+    padding: 10,
+    backgroundColor: '#eaf6ff',
+    borderRadius: 10,
+  },
   optionLabel: {
-    color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
+    fontWeight: '500',
     marginBottom: 5,
+    color: '#19376d',
   },
   saveButton: {
     marginTop: 30,
