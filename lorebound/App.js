@@ -14,6 +14,7 @@ import BookDungeon from './src/screens/BookDungeon';
 import PopCultureDungeon from './src/screens/PopCultureDungeon';
 import AllAroundDungeon from './src/screens/AllAroundDungeon';
 import CharacterCustomization from './src/screens/CharacterCustomization';
+import Leaderboards from './src/screens/Leaderboard';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,6 +27,7 @@ export default function App() {
         <Stack.Screen name="DailyChallenge" component={DailyChallenge} />
         <Stack.Screen name="DungeonSelect" component={DungeonSelect} />
         <Stack.Screen name="CharacterCustomization" component={CharacterCustomization} />
+        <Stack.Screen name="Leaderboard" component={Leaderboards} />
         <Stack.Screen name="SportDungeon" component={SportDungeon} />
         <Stack.Screen name="MusicDungeon" component={MusicDungeon} />
         <Stack.Screen name="HistoryDungeon" component={HistoryDungeon} />

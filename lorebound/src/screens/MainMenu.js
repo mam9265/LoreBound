@@ -19,7 +19,7 @@ function MainMenu({ navigation }) {
         <Text style={styles.buttonText}>Daily Challenge</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.smallButton}>
+      <TouchableOpacity style={styles.smallButton} onPress={() => navigation.navigate('Leaderboard')}>
         <Text style={styles.buttonText}>Leaderboards</Text>
       </TouchableOpacity>
 

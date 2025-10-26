@@ -1,13 +1,6 @@
 import React, { useMemo, useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-} from "react-native";
-import styles from "./Styles"; // your stylesheet
+import {View, Text, TouchableOpacity, FlatList, RefreshControl, StyleSheet} from "react-native";
+import styles from '../styles/Styles';
 
 function Leaderboards({ navigation }) {
   // mock data (sorted by score desc)
@@ -114,3 +107,89 @@ function Leaderboards({ navigation }) {
 
 export default Leaderboards;
 
+const sx = StyleSheet.create({
+  headerBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    marginBottom: 8,
+  },
+  backBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: "#19376d",
+  },
+  backBtnText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  headerRightSpace: {
+    width: 60, // balances layout since Back button is on the left
+  },
+  tableHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderColor: "#ccc",
+  },
+  th: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#19376d",
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "#eee",
+    marginHorizontal: 16,
+  },
+  rankText: {
+    width: 24,
+    fontWeight: "600",
+    fontSize: 15,
+    color: "#19376d",
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#19376d20",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+  avatarText: {
+    color: "#19376d",
+    fontWeight: "700",
+  },
+  rowCenter: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  nameText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#222",
+  },
+  metaText: {
+    fontSize: 12,
+    color: "#555",
+  },
+  scoreText: {
+    width: 100,
+    textAlign: "right",
+    fontWeight: "700",
+    color: "#19376d",
+    fontSize: 15,
+  },
+});
