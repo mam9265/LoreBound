@@ -114,23 +114,56 @@ const styles = StyleSheet.create({
     backgroundColor: '#a5d7e8',
   },
 
+  // Outer container in landscape
+  authContainerLandscape: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly', // spread both sides evenly
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+
+  // Left title area
+  authTitleContainerLandscape: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingRight: 60,
+  },
+
+  // Right form area
+  authFormContainerLandscape: {
+    flex: 1,
+    alignSelf: 'center',
+    maxWidth: 400,
+  },
+
   authInnerContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    padding: 20,
+  },
+
+  authInnerContainerLandscape: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+
+  authTitleContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
   },
 
   authFormContainer: {
-    width: '100%',
+    width: '90%',
     maxWidth: 400,
     backgroundColor: '#fff',
-    borderRadius: 15,
     padding: 20,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowRadius: 8,
     elevation: 3,
   },
 

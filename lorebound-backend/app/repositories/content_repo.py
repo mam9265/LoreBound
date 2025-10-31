@@ -86,6 +86,24 @@ class ContentRepository:
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
+    async def get_questions_by_category(
+        self,
+        category: DungeonCategory,
+        limit: Optional[int] = None
+    ) -> List[Question]:
+        """Get all questions belonging to dungeons in a given category."""
+        query = select(Question).where(
+            Question.dungeon_id.in_(
+                select(Dungeon.id).where(Dungeon.category == category)
+            )
+        )
+
+        if limit:
+            query = query.limit(limit)
+
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
     async def get_question_by_hash(self, question_hash: str, session: AsyncSession = None) -> Optional[Question]:
         """Get question by hash to prevent duplicates."""
         # For now, we'll use prompt as a simple hash check
