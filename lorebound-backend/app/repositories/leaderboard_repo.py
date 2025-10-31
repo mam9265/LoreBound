@@ -23,18 +23,21 @@ class LeaderboardRepository:
         period_key: str,
         limit: int = 100,
         offset: int = 0
-    ) -> List[Score]:
-        """Get top scores for a specific leaderboard period."""
+    ) -> List[tuple]:
+        """Get top aggregated scores for a specific leaderboard period."""
         # Calculate time filter based on scope and period
         time_filter = self._get_time_filter_for_period(scope, period_key)
         
+        # Aggregate scores by user
         query = (
-            select(Score)
-            .options(
-                selectinload(Score.user).selectinload(User.profile),
-                selectinload(Score.run)
+            select(
+                Score.user_id,
+                func.sum(Score.score).label('total_score'),
+                func.count(Score.id).label('run_count'),
+                func.max(Score.created_at).label('last_played')
             )
-            .order_by(desc(Score.score))
+            .group_by(Score.user_id)
+            .order_by(desc(func.sum(Score.score)))
         )
         
         if time_filter:
@@ -43,7 +46,30 @@ class LeaderboardRepository:
         query = query.offset(offset).limit(limit)
         
         result = await self.session.execute(query)
-        return list(result.scalars().all())
+        aggregated = result.all()
+        
+        # Now get user details for each aggregated result
+        leaderboard_data = []
+        for user_id, total_score, run_count, last_played in aggregated:
+            # Get user with profile
+            user_query = (
+                select(User)
+                .options(selectinload(User.profile))
+                .where(User.id == user_id)
+            )
+            user_result = await self.session.execute(user_query)
+            user = user_result.scalar_one_or_none()
+            
+            if user:
+                leaderboard_data.append({
+                    'user_id': user_id,
+                    'user': user,
+                    'total_score': total_score,
+                    'run_count': run_count,
+                    'last_played': last_played
+                })
+        
+        return leaderboard_data
 
     async def get_user_rank_in_period(
         self,
@@ -264,16 +290,17 @@ class LeaderboardRepository:
                 return date_obj.replace(tzinfo=timezone.utc)
             
             elif scope == LeaderboardScope.WEEKLY:
-                # period_key format: "2024-W01"
-                year, week = period_key.split("-W")
-                # Calculate first day of the week
+                # period_key format: "2025-W43"
                 from datetime import timedelta
-                jan_1 = datetime(int(year), 1, 1, tzinfo=timezone.utc)
-                # Find the first Monday of the year
-                days_to_monday = (7 - jan_1.weekday()) % 7
-                first_monday = jan_1 + timedelta(days=days_to_monday)
-                # Calculate the start of the specified week
-                week_start = first_monday + timedelta(weeks=int(week) - 1)
+                year, week = period_key.split("-W")
+                
+                # Use ISO 8601 week calculation
+                # Week 1 is the week with the first Thursday of the year
+                # Find the Monday of the specified week
+                jan_4 = datetime(int(year), 1, 4, tzinfo=timezone.utc)
+                week_1_monday = jan_4 - timedelta(days=jan_4.weekday())
+                week_start = week_1_monday + timedelta(weeks=int(week) - 1)
+                
                 return week_start
         
         except (ValueError, AttributeError):

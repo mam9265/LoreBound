@@ -1,25 +1,76 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import styles from '../styles/Styles';
+import { ContentService } from '../services';
 
-function DungeonSelect({ navigation}) {
-  const dungeons = [
-    { name: "Sports Dungeon", floors: "26/30", route: "SportDungeon" },
-    { name: "Music Dungeon", floors: "15/30", route: "MusicDungeon" },
-    { name: "History Dungeon", floors: "2/30", route: "HistoryDungeon" },
-    { name: "Book Dungeon", floors: "20/30", route: "BookDungeon" },
-    { name: "Pop Culture Dungeon", floors: "12/30", route: "PopCultureDungeon" },
-    { name: "All Around Dungeon", floors: "9/30", route: "AllAroundDungeon" },
-  ];
+function DungeonSelect({ navigation }) {
+  const [dungeons, setDungeons] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadDungeons();
+  }, []);
+
+  const loadDungeons = async () => {
+    try {
+      setIsLoading(true);
+      const data = await ContentService.getDungeons();
+      setDungeons(data);
+    } catch (error) {
+      console.error('Failed to load dungeons:', error);
+      Alert.alert(
+        'Error',
+        'Failed to load dungeons. Please check your connection and try again.',
+        [
+          { text: 'Retry', onPress: loadDungeons },
+          { text: 'Cancel', onPress: () => navigation.goBack() }
+        ]
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDungeonPress = (dungeon) => {
+    // Navigate to RunGameplay with dungeon data
+    navigation.navigate('RunGameplay', {
+      dungeonId: dungeon.id,
+      dungeonName: dungeon.title,
+      dungeonCategory: dungeon.category,
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#19376d" />
+        <Text style={[styles.headerText, { marginTop: 20 }]}>Loading Dungeons...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Dungeon Select</Text>
       <View style={styles.grid}>
-        {dungeons.map((dungeon, index) => (
-          <TouchableOpacity key={index} style={styles.dungeonButton} onPress={() => navigation.navigate(dungeon.route)}>
-            <Text style={styles.dungeonTitle}>{dungeon.name}</Text>
-            <Text style={styles.dungeonFloors}>Floors Cleared: {dungeon.floors}</Text>
+        {dungeons.map((dungeon) => (
+          <TouchableOpacity
+            key={dungeon.id}
+            style={styles.dungeonButton}
+            onPress={() => handleDungeonPress(dungeon)}
+          >
+            <Text style={{ fontSize: 32, marginBottom: 6 }}>
+              {ContentService.getCategoryIcon(dungeon.category)}
+            </Text>
+            <Text style={styles.dungeonTitle} numberOfLines={2}>
+              {dungeon.title}
+            </Text>
+            <Text style={styles.dungeonFloors}>
+              {ContentService.getCategoryDisplayName(dungeon.category)}
+            </Text>
+            <Text style={styles.dungeonFloors}>
+              {dungeon.tiers?.length || 0} Tiers
+            </Text>
           </TouchableOpacity>
         ))}
         <TouchableOpacity

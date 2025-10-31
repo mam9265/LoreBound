@@ -4,6 +4,7 @@ from .auth_service import AuthenticationService, get_auth_service
 from .apple_service import AppleSignInService, get_apple_service
 from .content_service import ContentService, get_content_service
 from .trivia_api_client import TriviaAPIClient, create_trivia_client
+from .leaderboard_service import LeaderboardService
 from .exceptions import (
     ServiceError,
     AuthenticationError,
@@ -26,6 +27,7 @@ __all__ = [
     "AppleSignInService", 
     "ContentService",
     "TriviaAPIClient",
+    "LeaderboardService",
     
     # Service factories
     "get_auth_service",

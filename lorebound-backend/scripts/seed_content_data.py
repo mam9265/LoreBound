@@ -178,10 +178,13 @@ async def seed_questions():
                 print("[ERROR] No dungeons found. Please seed dungeons first.")
                 return
             
-            # Check if questions already exist
-            existing_questions = await content_repo.get_questions_by_category(DungeonCategory.HISTORY, limit=1)
-            if existing_questions:
-                print("Database already has questions. Skipping seeding.")
+            # Check if questions already exist by counting total questions
+            from sqlalchemy import select, func
+            from app.domain.models import Question as QuestionModel
+            result = await session.execute(select(func.count(QuestionModel.id)))
+            question_count = result.scalar() or 0
+            if question_count > 0:
+                print(f"Database already has {question_count} questions. Skipping seeding.")
                 return
             
             print("Seeding questions...")

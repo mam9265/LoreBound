@@ -21,6 +21,8 @@ class RunRepository:
         user_id: UUID,
         dungeon_id: UUID,
         seed: int,
+        floor: int = 1,
+        session_token: Optional[str] = None,
         summary: Optional[Dict[str, Any]] = None
     ) -> Run:
         """Create a new game run."""
@@ -28,6 +30,9 @@ class RunRepository:
             user_id=user_id,
             dungeon_id=dungeon_id,
             seed=seed,
+            floor=floor,
+            session_token=session_token,
+            status="in_progress",
             summary=summary or {},
             started_at=datetime.now(timezone.utc)
         )
@@ -74,9 +79,10 @@ class RunRepository:
     async def complete_run(
         self,
         run_id: UUID,
+        total_score: int,
         summary: Dict[str, Any],
         signature: str
-    ) -> bool:
+    ) -> Run:
         """Mark a run as completed with summary and signature."""
         from sqlalchemy import update
         
@@ -84,12 +90,75 @@ class RunRepository:
             update(Run)
             .where(Run.id == run_id)
             .values(
+                status="completed",
                 completed_at=datetime.now(timezone.utc),
+                total_score=total_score,
                 summary=summary,
                 signature=signature
             )
+            .returning(Run)
         )
-        return result.rowcount > 0
+        return result.scalar_one()
+    
+    async def abandon_run(
+        self,
+        run_id: UUID
+    ) -> Run:
+        """Mark a run as abandoned."""
+        from sqlalchemy import update
+        
+        result = await self.session.execute(
+            update(Run)
+            .where(Run.id == run_id)
+            .values(
+                status="abandoned",
+                completed_at=datetime.now(timezone.utc)
+            )
+            .returning(Run)
+        )
+        return result.scalar_one()
+    
+    async def get_by_id(self, run_id: UUID) -> Optional[Run]:
+        """Get run by ID (alias for get_run_by_id)."""
+        return await self.get_run_by_id(run_id)
+    
+    async def get_user_statistics(self, user_id: UUID) -> Dict[str, Any]:
+        """Get user's run statistics."""
+        # Get total runs
+        total_runs_query = select(func.count(Run.id)).where(
+            and_(Run.user_id == user_id, Run.status == "completed")
+        )
+        total_runs = (await self.session.execute(total_runs_query)).scalar() or 0
+        
+        # Get score statistics
+        score_stats_query = select(
+            func.sum(Score.score),
+            func.avg(Score.score),
+            func.max(Score.score),
+            func.sum(Score.correct_count),
+            func.sum(Score.correct_count) + func.count(Score.id) - func.sum(Score.correct_count)
+        ).where(Score.user_id == user_id)
+        
+        stats_result = await self.session.execute(score_stats_query)
+        stats = stats_result.one()
+        
+        total_score = stats[0] or 0
+        avg_score = float(stats[1] or 0)
+        best_score = stats[2] or 0
+        total_correct = stats[3] or 0
+        total_questions = total_correct + (stats[4] or 0)
+        
+        accuracy = (total_correct / total_questions * 100) if total_questions > 0 else 0
+        
+        return {
+            "total_runs": total_runs,
+            "total_score": total_score,
+            "average_score": avg_score,
+            "best_score": best_score,
+            "total_correct": total_correct,
+            "total_questions": total_questions,
+            "accuracy_percentage": accuracy
+        }
 
     async def create_score(
         self,

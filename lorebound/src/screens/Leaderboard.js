@@ -1,38 +1,58 @@
-import React, { useMemo, useState, useCallback } from "react";
-import {View, Text, TouchableOpacity, FlatList, RefreshControl, StyleSheet} from "react-native";
+import React, { useState, useCallback, useEffect } from "react";
+import {View, Text, TouchableOpacity, FlatList, RefreshControl, StyleSheet, ActivityIndicator} from "react-native";
 import styles from '../styles/Styles';
+import LeaderboardService from '../services/LeaderboardService';
 
 function Leaderboards({ navigation }) {
-  // mock data (sorted by score desc)
-  const data = useMemo(
-    () =>
-      [
-        { id: "1", name: "Astra", score: 9876, runs: 142 },
-        { id: "2", name: "Kane", score: 9530, runs: 120 },
-        { id: "3", name: "Lyra", score: 9205, runs: 110 },
-        { id: "4", name: "Cipher", score: 8990, runs: 101 },
-        { id: "5", name: "Nova", score: 8750, runs: 99 },
-        { id: "6", name: "Rook", score: 8602, runs: 95 },
-        { id: "7", name: "Echo", score: 8450, runs: 90 },
-        { id: "8", name: "Vex", score: 8321, runs: 88 },
-        { id: "9", name: "Jade", score: 8204, runs: 84 },
-        { id: "10", name: "Grit", score: 8100, runs: 82 },
-        { id: "11", name: "Zuri", score: 7999, runs: 81 },
-        { id: "12", name: "Bolt", score: 7895, runs: 79 },
-        { id: "13", name: "Mira", score: 7704, runs: 76 },
-        { id: "14", name: "Onyx", score: 7620, runs: 74 },
-        { id: "15", name: "Slate", score: 7555, runs: 72 },
-      ].sort((a, b) => b.score - a.score),
-    []
-  );
-
+  const [data, setData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedScope, setSelectedScope] = useState('alltime');
+  const [totalParticipants, setTotalParticipants] = useState(0);
+  const [periodKey, setPeriodKey] = useState('');
 
-  const onRefresh = useCallback(() => {
+  const fetchLeaderboard = async (scope) => {
+    try {
+      setError(null);
+      const leaderboardData = await LeaderboardService.getLeaderboard(scope, 100, 0);
+      
+      // Transform API data to match component format
+      const transformedData = leaderboardData.entries.map(entry => ({
+        id: entry.user_id,
+        name: entry.handle,
+        score: entry.score,
+        runs: entry.total_runs,
+        rank: entry.rank,
+      }));
+      
+      setData(transformedData);
+      setTotalParticipants(leaderboardData.total_participants);
+      setPeriodKey(leaderboardData.period_key);
+    } catch (error) {
+      console.error('Failed to fetch leaderboard:', error);
+      setError(error.message || 'Failed to load leaderboard');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaderboard(selectedScope);
+  }, [selectedScope]);
+
+  const onRefresh = () => {
     setRefreshing(true);
-    // simulate fetch
-    setTimeout(() => setRefreshing(false), 800);
-  }, []);
+    fetchLeaderboard(selectedScope);
+  };
+
+  const handleScopeChange = (scope) => {
+    if (scope !== selectedScope) {
+      setSelectedScope(scope);
+      setLoading(true);
+    }
+  };
 
   const renderRow = ({ item, index }) => {
     const rank = index + 1;
@@ -56,6 +76,15 @@ function Leaderboards({ navigation }) {
     );
   };
 
+  if (loading && !refreshing) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color="#19376d" />
+        <Text style={sx.loadingText}>Loading leaderboard...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { justifyContent: "flex-start" }]}>
       {/* header bar */}
@@ -76,8 +105,48 @@ function Leaderboards({ navigation }) {
       {/* decorative header box */}
       <View style={styles.headerBox}>
         <Text style={styles.headerText}>Leaderboards</Text>
-        <Text style={styles.headerSubText}>All-Time • Highest Scores</Text>
+        <Text style={styles.headerSubText}>
+          {LeaderboardService.getScopeDisplayName(selectedScope)} • {totalParticipants} Players
+        </Text>
       </View>
+
+      {/* Scope Switcher */}
+      <View style={sx.scopeSwitcher}>
+        <TouchableOpacity
+          style={[sx.scopeTab, selectedScope === 'today' && sx.scopeTabActive]}
+          onPress={() => handleScopeChange('today')}
+        >
+          <Text style={[sx.scopeTabText, selectedScope === 'today' && sx.scopeTabTextActive]}>
+            Today
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[sx.scopeTab, selectedScope === 'weekly' && sx.scopeTabActive]}
+          onPress={() => handleScopeChange('weekly')}
+        >
+          <Text style={[sx.scopeTabText, selectedScope === 'weekly' && sx.scopeTabTextActive]}>
+            This Week
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[sx.scopeTab, selectedScope === 'alltime' && sx.scopeTabActive]}
+          onPress={() => handleScopeChange('alltime')}
+        >
+          <Text style={[sx.scopeTabText, selectedScope === 'alltime' && sx.scopeTabTextActive]}>
+            All-Time
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Error Message */}
+      {error && (
+        <View style={sx.errorContainer}>
+          <Text style={sx.errorText}>{error}</Text>
+          <TouchableOpacity onPress={() => fetchLeaderboard(selectedScope)} style={sx.retryButton}>
+            <Text style={sx.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* table header */}
       <View style={sx.tableHeader}>
@@ -89,10 +158,16 @@ function Leaderboards({ navigation }) {
       {/* list */}
       <FlatList
         data={data}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={renderRow}
         contentContainerStyle={{ paddingBottom: 24 }}
         ItemSeparatorComponent={() => <View style={sx.separator} />}
+        ListEmptyComponent={() => (
+          <View style={sx.emptyContainer}>
+            <Text style={sx.emptyText}>No rankings yet for this period</Text>
+            <Text style={sx.emptySubText}>Be the first to complete a run!</Text>
+          </View>
+        )}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -128,6 +203,31 @@ const sx = StyleSheet.create({
   },
   headerRightSpace: {
     width: 60, // balances layout since Back button is on the left
+  },
+  scopeSwitcher: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    gap: 8,
+  },
+  scopeTab: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
+    alignItems: "center",
+  },
+  scopeTabActive: {
+    backgroundColor: "#19376d",
+  },
+  scopeTabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#666",
+  },
+  scopeTabTextActive: {
+    color: "#fff",
   },
   tableHeader: {
     flexDirection: "row",
@@ -191,5 +291,50 @@ const sx = StyleSheet.create({
     fontWeight: "700",
     color: "#19376d",
     fontSize: 15,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#666",
+  },
+  errorContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#ffebee",
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 8,
+  },
+  errorText: {
+    color: "#c62828",
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 8,
+  },
+  retryButton: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "#c62828",
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#666",
+    marginBottom: 8,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: "#999",
   },
 });

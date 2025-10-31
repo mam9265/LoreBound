@@ -42,14 +42,69 @@ async def start_run(
     try:
         logger.info(f"Starting run for user {current_user.id}, dungeon {start_data.dungeon_id}")
         result = await run_service.start_run(current_user.id, start_data, session)
+        await session.commit()
         logger.info(f"Run started successfully: {result.id}")
         return result
         
     except Exception as e:
+        await session.rollback()
         logger.error(f"Failed to start run for user {current_user.id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to start run: {str(e)}"
+        )
+
+
+@router.post("/{run_id}/validate-answer")
+async def validate_answer(
+    run_id: UUID,
+    question_id: UUID,
+    answer_index: int,
+    service_session: tuple[RunService, AsyncSession] = Depends(get_run_service_with_session),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Validate a single answer for real-time feedback.
+    
+    Returns whether the answer was correct without completing the run.
+    """
+    run_service, session = service_session
+    
+    try:
+        from ....repositories.content_repo import ContentRepository
+        content_repo = ContentRepository(session)
+        
+        # Get the question
+        question = await content_repo.get_question_by_id(question_id)
+        if not question:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found"
+            )
+        
+        # Validate the run belongs to user
+        run = await run_service.run_repo.get_run_by_id(run_id)
+        if not run or run.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Run not found"
+            )
+        
+        # Check if answer is correct
+        is_correct = answer_index == question.answer_index
+        
+        return {
+            "is_correct": is_correct,
+            "correct_answer_index": question.answer_index if not is_correct else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to validate answer: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to validate answer"
         )
 
 
@@ -70,28 +125,45 @@ async def submit_run(
     try:
         logger.info(f"Submitting run {run_id} for user {current_user.id}")
         result = await run_service.submit_run(current_user.id, run_id, submit_data, session)
+        await session.commit()
+        
+        # Invalidate leaderboard caches so new score appears immediately
+        try:
+            from ....core.redis_client import get_redis
+            from ....services.leaderboard_service import LeaderboardService
+            redis = await anext(get_redis())
+            lb_service = LeaderboardService(session, redis)
+            await lb_service.invalidate_all_caches()
+            logger.info("Invalidated leaderboard caches after run submission")
+        except Exception as cache_error:
+            logger.warning(f"Failed to invalidate leaderboard cache: {cache_error}")
+        
         logger.info(f"Run submitted successfully: {run_id}")
         return result
         
     except InvalidRunDataError as e:
+        await session.rollback()
         logger.warning(f"Invalid run data for {run_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except AntiCheatViolationError as e:
+        await session.rollback()
         logger.warning(f"Anti-cheat violation for run {run_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Anti-cheat violation: {str(e)}"
         )
     except ScoreCalculationError as e:
+        await session.rollback()
         logger.warning(f"Score calculation error for run {run_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Score calculation error: {str(e)}"
         )
     except Exception as e:
+        await session.rollback()
         logger.error(f"Failed to submit run {run_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

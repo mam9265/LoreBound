@@ -15,6 +15,10 @@ import PopCultureDungeon from './src/screens/PopCultureDungeon';
 import AllAroundDungeon from './src/screens/AllAroundDungeon';
 import CharacterCustomization from './src/screens/CharacterCustomization';
 import Leaderboards from './src/screens/Leaderboard';
+import RunGameplay from './src/screens/RunGameplay';
+import RunGameplayDebug from './src/screens/RunGameplayDebug';
+import RunResults from './src/screens/RunResults';
+import RunHistory from './src/screens/RunHistory';
 
 const Stack = createNativeStackNavigator();
 
@@ -28,6 +32,9 @@ export default function App() {
         <Stack.Screen name="DungeonSelect" component={DungeonSelect} />
         <Stack.Screen name="CharacterCustomization" component={CharacterCustomization} />
         <Stack.Screen name="Leaderboard" component={Leaderboards} />
+        <Stack.Screen name="RunGameplay" component={RunGameplay} />
+        <Stack.Screen name="RunResults" component={RunResults} />
+        <Stack.Screen name="RunHistory" component={RunHistory} />
         <Stack.Screen name="SportDungeon" component={SportDungeon} />
         <Stack.Screen name="MusicDungeon" component={MusicDungeon} />
         <Stack.Screen name="HistoryDungeon" component={HistoryDungeon} />

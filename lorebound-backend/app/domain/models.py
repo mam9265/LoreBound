@@ -196,6 +196,10 @@ class Run(Base):
     user_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("users.id"))
     dungeon_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("dungeons.id"))
     seed: Mapped[int] = mapped_column(Integer)
+    floor: Mapped[int] = mapped_column(Integer, default=1)
+    status: Mapped[str] = mapped_column(String(20), default="in_progress")
+    session_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    total_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     summary: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -208,6 +212,7 @@ class Run(Base):
     
     __table_args__ = (
         Index("idx_runs_user_created", user_id, started_at),
+        Index("idx_runs_status", status),
     )
 
 

@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from .core.config import settings
 from .core.logging import setup_logging, get_logger
+from .core.redis_client import redis_client
 from .repositories.base import (
     wait_for_database, 
     close_database_connection,
@@ -42,6 +43,14 @@ async def lifespan(app: FastAPI):
     if not await wait_for_database():
         raise RuntimeError("Database is not available")
     
+    # Connect to Redis
+    try:
+        await redis_client.connect()
+        logger.info("✅ Redis connected")
+    except Exception as e:
+        logger.warning(f"⚠️  Redis connection failed: {e}")
+        # Don't fail startup if Redis is down - app can work without caching
+    
     logger.info("✅ Application startup complete")
     
     yield
@@ -49,6 +58,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("🛑 Shutting down LoreBound Backend...")
     await close_database_connection()
+    await redis_client.disconnect()
     logger.info("✅ Application shutdown complete")
 
 

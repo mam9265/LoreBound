@@ -58,6 +58,11 @@ class RunService:
         logger.info(f"Starting run for user {user_id}, dungeon {start_data.dungeon_id}")
 
         try:
+            # Generate seed for this run
+            import random
+            import time
+            seed = int(time.time() * 1000) % 1000000
+            
             # Generate anti-cheat session token
             session_token = self._generate_session_token(user_id, start_data.dungeon_id)
             
@@ -65,10 +70,10 @@ class RunService:
             run = await self.run_repo.create_run(
                 user_id=user_id,
                 dungeon_id=start_data.dungeon_id,
+                seed=seed,
                 floor=start_data.floor,
                 session_token=session_token,
-                client_metadata=start_data.client_metadata,
-                session=session
+                summary={"client_metadata": start_data.client_metadata}
             )
 
             logger.info(f"Run started: {run.id} for user {user_id}")
@@ -94,7 +99,7 @@ class RunService:
 
         try:
             # Get existing run
-            run = await self.run_repo.get_by_id(run_id, session)
+            run = await self.run_repo.get_run_by_id(run_id)
             if not run:
                 raise InvalidRunDataError(f"Run not found: {run_id}")
             
@@ -112,14 +117,43 @@ class RunService:
                 run, submit_data, session
             )
 
+            # Calculate total score
+            total_score = sum(score["points"] for score in validated_scores)
+            
+            # Calculate stats for leaderboard
+            correct_count = sum(1 for score in validated_scores if score["is_correct"])
+            total_time_ms = sum(int(score["answer_time"] * 1000) for score in validated_scores)
+            streak_max = max((score.get("streak_bonus", 0) for score in validated_scores), default=0)
+            
             # Update run with results
             updated_run = await self.run_repo.complete_run(
                 run_id=run_id,
-                scores=validated_scores,
-                total_score=sum(score.points for score in validated_scores),
-                client_signature=submit_data.client_signature,
-                session=session
+                total_score=total_score,
+                summary={
+                    "scores": validated_scores,
+                    "client_signature": submit_data.client_signature
+                },
+                signature=submit_data.client_signature
             )
+
+            # Create Score record for leaderboard
+            from ..domain.models import Score
+            score_record = Score(
+                run_id=run_id,
+                user_id=user_id,
+                floor=run.floor,
+                correct_count=correct_count,
+                total_time_ms=total_time_ms,
+                streak_max=streak_max,
+                score=total_score
+            )
+            session.add(score_record)
+            await session.flush()
+            logger.info(f"Created score record for run {run_id}: {total_score} points")
+
+            # Invalidate leaderboard cache (will be refreshed on next request)
+            # Note: We could import LeaderboardService here if needed for cache invalidation
+            # For now, cache will expire naturally (30s-5min TTL)
 
             # Update user progression if needed
             await self._update_user_progression(user_id, updated_run, session)
@@ -147,8 +181,7 @@ class RunService:
             runs = await self.run_repo.get_user_runs(
                 user_id=user_id,
                 limit=limit,
-                offset=offset,
-                session=session
+                offset=offset
             )
 
             return [RunResponse.model_validate(run) for run in runs]
@@ -167,7 +200,7 @@ class RunService:
         logger.info(f"Fetching run {run_id} for user {user_id}")
 
         try:
-            run = await self.run_repo.get_by_id(run_id, session)
+            run = await self.run_repo.get_run_by_id(run_id)
             if not run:
                 raise InvalidRunDataError(f"Run not found: {run_id}")
             
@@ -191,8 +224,8 @@ class RunService:
         logger.info(f"Fetching stats for user {user_id}")
 
         try:
-            stats = await self.run_repo.get_user_statistics(user_id, session)
-            return RunStatsResponse.model_validate(stats)
+            stats = await self.run_repo.get_user_statistics(user_id)
+            return RunStatsResponse(**stats)
 
         except Exception as e:
             logger.error(f"Failed to fetch stats for user {user_id}: {e}")
@@ -230,8 +263,8 @@ class RunService:
         now = datetime.now(timezone.utc)
         run_duration = (now - run.started_at).total_seconds()
         
-        # Basic time validation (min 30 seconds, max 1 hour per run)
-        if run_duration < 30:
+        # Basic time validation (min 1 second to prevent instant submission, max 1 hour per run)
+        if run_duration < 1:
             raise AntiCheatViolationError("Run completed too quickly")
         if run_duration > 3600:
             raise AntiCheatViolationError("Run took too long")
@@ -316,7 +349,7 @@ class RunService:
         logger.info(f"Abandoning run {run_id} for user {user_id}")
 
         try:
-            run = await self.run_repo.get_by_id(run_id, session)
+            run = await self.run_repo.get_run_by_id(run_id)
             if not run:
                 raise InvalidRunDataError(f"Run not found: {run_id}")
             
@@ -327,7 +360,7 @@ class RunService:
                 raise InvalidRunDataError(f"Run is not in progress: {run.status}")
 
             # Mark run as abandoned
-            updated_run = await self.run_repo.abandon_run(run_id, session)
+            updated_run = await self.run_repo.abandon_run(run_id)
             
             logger.info(f"Run abandoned: {run_id} for user {user_id}")
             return RunResponse.model_validate(updated_run)
