@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, Image, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Button, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from '../styles/Styles';
 
 function CharacterCustomization({ navigation }) {
-
   const [equipment, setEquipment] = useState({
     helmet: 'Leather Cap',
     armor: 'Traveler’s Tunic',
@@ -35,6 +35,37 @@ function CharacterCustomization({ navigation }) {
   const cycleColor = () => {
     setColorIndex((colorIndex + 1) % knightSprites.length);
   };
+
+  const saveEquipment = async () => {
+    try {
+      const saveData = {
+        equipment,
+        colorIndex,
+      };
+      await AsyncStorage.setItem('characterData', JSON.stringify(saveData));
+      Alert.alert('Saved!', 'Your character customization has been saved.');
+    } catch (error) {
+      console.error('Error saving character data:', error);
+      Alert.alert('Error', 'Failed to save your customization.');
+    }
+  };
+
+  useEffect(() => {
+    const loadSavedData = async () => {
+      try {
+        const savedData = await AsyncStorage.getItem('characterData');
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          setEquipment(parsed.equipment || equipment);
+          setColorIndex(parsed.colorIndex || 0);
+        }
+      } catch (error) {
+        console.error('Error loading saved character data:', error);
+      }
+    };
+
+    loadSavedData();
+  }, []);
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -78,18 +109,19 @@ function CharacterCustomization({ navigation }) {
           <Button title="Change Shield" onPress={() => cycleOption('shield', shields)} />
         </View>
 
-        <TouchableOpacity style={styles.saveButton}>
+        <TouchableOpacity style={styles.saveButton} onPress={saveEquipment}>
           <Text style={styles.saveText}>Save Equipment</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.playButton, {backgroundColor: '#19376d', marginTop: 10 }]} onPress={() => navigation.goBack()}>
+          style={[styles.playButton, { backgroundColor: '#19376d', marginTop: 10 }]}
+          onPress={() => navigation.goBack()}
+        >
           <Text style={styles.playText}>BACK</Text>
         </TouchableOpacity>
-
       </View>
     </ScrollView>
   );
-};
+}
 
 export default CharacterCustomization;
