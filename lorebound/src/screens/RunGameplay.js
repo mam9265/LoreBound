@@ -13,14 +13,22 @@ import styles from '../styles/Styles';
 const QUESTION_TIME_LIMIT = 30; // seconds per question
 
 function RunGameplay({ navigation, route }) {
-  const { dungeonId, dungeonName, dungeonCategory } = route.params || {};
+  const { 
+    dungeonId, 
+    dungeonName, 
+    dungeonCategory,
+    isDailyChallenge = false,
+    challengeModifiers = {},
+    runData: preLoadedRunData = null,
+    questions: preLoadedQuestions = null,
+  } = route.params || {};
   
   // Run state
-  const [runData, setRunData] = useState(null);
-  const [questions, setQuestions] = useState([]);
+  const [runData, setRunData] = useState(preLoadedRunData);
+  const [questions, setQuestions] = useState(preLoadedQuestions || []);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!preLoadedRunData || !preLoadedQuestions);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Game state
@@ -28,6 +36,7 @@ function RunGameplay({ navigation, route }) {
   const [lives, setLives] = useState(3);
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0); // Track correct answers
   const [timer, setTimer] = useState(QUESTION_TIME_LIMIT);
   const [turnData, setTurnData] = useState([]);
   const [scoresData, setScoresData] = useState([]);
@@ -51,6 +60,13 @@ function RunGameplay({ navigation, route }) {
   }, [timer, isLoading, isSubmitting]);
 
   const initializeRun = async () => {
+    // Skip initialization if we already have pre-loaded data (daily challenge)
+    if (preLoadedRunData && preLoadedQuestions && preLoadedQuestions.length > 0) {
+      console.log('Using pre-loaded run data and questions');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       setIsLoading(true);
       console.log('Initializing run for dungeon:', dungeonId);
@@ -59,6 +75,7 @@ function RunGameplay({ navigation, route }) {
       const run = await RunService.startRun(dungeonId, 1, {
         device: 'mobile',
         version: '1.0.0',
+        is_daily_challenge: isDailyChallenge,
       });
       
       console.log('Run started:', run);
@@ -95,7 +112,8 @@ function RunGameplay({ navigation, route }) {
   };
 
   const handleAnswerSelect = (answerIndex) => {
-    if (selectedAnswer === null && !isSubmitting) {
+    // Allow changing answer before submission
+    if (!isSubmitting) {
       setSelectedAnswer(answerIndex);
     }
   };
@@ -145,10 +163,16 @@ function RunGameplay({ navigation, route }) {
       streakBonus = Math.floor(basePoints * Math.min(streak * 0.1, 1.0));
 
       points = basePoints + timeBonus + streakBonus;
+      
+      // Apply daily challenge multiplier if applicable
+      if (isDailyChallenge && challengeModifiers.points_multiplier) {
+        points = Math.floor(points * challengeModifiers.points_multiplier);
+      }
 
       setScore((prev) => prev + points);
       setStreak((prev) => prev + 1);
       setMaxStreak((prev) => Math.max(prev, streak + 1));
+      setCorrectCount((prev) => prev + 1); // Increment correct count
     } else {
       setLives((prev) => prev - 1);
       setStreak(0);
@@ -187,12 +211,15 @@ function RunGameplay({ navigation, route }) {
     setScoresData(newScoresData);
 
     // Check if game over
-    if (lives - (isCorrect ? 0 : 1) <= 0) {
-      // Game over
-      await completeRun(newTurnData, newScoresData);
+    const newLives = lives - (isCorrect ? 0 : 1);
+    const newCorrectCount = correctCount + (isCorrect ? 1 : 0);
+    
+    if (newLives <= 0) {
+      // Game over - ran out of lives (defeat)
+      await completeRun(newTurnData, newScoresData, false, newCorrectCount);
     } else if (currentQuestionIndex >= questions.length - 1) {
-      // Completed all questions
-      await completeRun(newTurnData, newScoresData);
+      // Completed all questions with lives remaining (victory)
+      await completeRun(newTurnData, newScoresData, true, newCorrectCount);
     } else {
       // Next question
       setTimeout(() => {
@@ -204,7 +231,7 @@ function RunGameplay({ navigation, route }) {
     }
   };
 
-  const completeRun = async (finalTurnData, finalScoresData) => {
+  const completeRun = async (finalTurnData, finalScoresData, isVictory = true, finalCorrectCount = correctCount) => {
     try {
       const signature = await RunService.calculateAggregateSignature(
         finalTurnData,
@@ -218,19 +245,22 @@ function RunGameplay({ navigation, route }) {
         signature
       );
 
-      // Use backend's validated results, not frontend's optimistic scores
-      const validatedScores = result.summary?.scores || [];
-      const actualCorrectCount = validatedScores.filter(s => s.is_correct).length;
-      const actualScore = result.total_score || 0;
+      // Use backend's total score but use our tracked correct count
+      // since the backend response doesn't include the detailed scores array
+      const actualScore = result.total_score || score;
 
-      // Navigate to results screen with ACTUAL results from backend
+      // Navigate to results screen with results
       navigation.replace('RunResults', {
         runData: result,
         score: actualScore,
         questionsAnswered: finalTurnData.length,
-        correctAnswers: actualCorrectCount,
+        correctAnswers: finalCorrectCount, // Use our tracked correct count
         maxStreak,
         dungeonName,
+        isVictory, // Pass victory status
+        totalQuestions: questions.length, // Pass total questions
+        isDailyChallenge, // Pass daily challenge status
+        challengeModifiers, // Pass bonus multipliers
       });
     } catch (error) {
       console.error('Failed to submit run:', error);
@@ -238,7 +268,7 @@ function RunGameplay({ navigation, route }) {
         'Error',
         'Failed to submit run results. Your progress may be lost.',
         [
-          { text: 'Try Again', onPress: () => completeRun(finalTurnData, finalScoresData) },
+          { text: 'Try Again', onPress: () => completeRun(finalTurnData, finalScoresData, isVictory, finalCorrectCount) },
           { text: 'Cancel', onPress: () => navigation.goBack() },
         ]
       );

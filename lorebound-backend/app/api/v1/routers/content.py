@@ -21,7 +21,7 @@ from ....schemas.content import (
     QuestionsRequest,
     QuestionsResponse
 )
-from ....domain.models import User
+from ....domain.models import User, DailyChallenge
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/content", tags=["content"])
@@ -95,30 +95,31 @@ async def get_questions(
     current_user: User = Depends(get_current_active_user)
 ) -> QuestionsResponse:
     """
-    Get questions for a dungeon with deterministic selection.
+    Get questions for a dungeon with varied selection.
     
-    Returns a deterministic set of questions based on user ID, dungeon, and floor.
-    Same user + dungeon + floor will always return the same questions.
+    Returns a different set of questions for each request, providing variety across runs.
     """
     content_service, session = service_session
     
     try:
-        logger.info(f"Fetching {count} questions for user {current_user.id}, dungeon {dungeon_id}, floor {floor}")
+        import time
+        # Generate unique seed for this request to ensure variety
+        run_seed = int(time.time() * 1000000) % (2**31)
+        
+        logger.info(f"Fetching {count} questions for user {current_user.id}, dungeon {dungeon_id}, floor {floor}, seed {run_seed}")
         
         questions = await content_service.get_questions_for_dungeon(
             dungeon_id=dungeon_id,
             floor=floor,
             count=count,
             user_id=current_user.id,
-            session=session
+            session=session,
+            run_seed=run_seed
         )
-        
-        # Generate the seed used for this selection (for client verification)
-        seed = content_service._generate_question_seed(current_user.id, dungeon_id, floor)
         
         response = QuestionsResponse(
             questions=questions,
-            seed=int(seed[:8], 16),  # Convert first 8 chars of hex to int
+            seed=run_seed,  # Return the seed used for this request
             dungeon_id=dungeon_id,
             floor=floor
         )
@@ -155,6 +156,10 @@ async def get_daily_challenge(
     Get current daily challenge.
     
     Returns today's daily challenge. Same for all users on the same day.
+    Features:
+    - Hard difficulty questions only
+    - Random category (different each day)
+    - 2x XP and 1.5x points bonus
     """
     content_service, session = service_session
     
@@ -175,6 +180,54 @@ async def get_daily_challenge(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch daily challenge"
+        )
+
+
+@router.get("/daily/{challenge_id}/questions", response_model=QuestionsResponse)
+async def get_daily_challenge_questions(
+    challenge_id: UUID,
+    service_session: tuple[ContentService, AsyncSession] = Depends(get_content_service_with_session),
+    current_user: User = Depends(get_current_active_user)
+) -> QuestionsResponse:
+    """
+    Get questions for daily challenge.
+    
+    Returns 10 hard difficulty questions for today's challenge.
+    """
+    content_service, session = service_session
+    
+    try:
+        logger.info(f"Fetching questions for daily challenge {challenge_id}, user: {current_user.id}")
+        
+        questions = await content_service.get_daily_challenge_questions(
+            challenge_id=challenge_id,
+            user_id=current_user.id,
+            session=session
+        )
+        
+        # Get challenge for metadata
+        challenge = await session.get(DailyChallenge, challenge_id)
+        
+        response = QuestionsResponse(
+            questions=questions,
+            seed=challenge.seed if challenge else 0,
+            dungeon_id=challenge.dungeon_id if challenge else UUID('00000000-0000-0000-0000-000000000000'),
+            floor=1  # Daily challenges are floor 1 equivalent
+        )
+        
+        logger.info(f"Retrieved {len(questions)} hard questions for daily challenge")
+        return response
+        
+    except DailyChallengeError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Daily challenge not found"
+        )
+    except Exception as e:
+        logger.error(f"Failed to fetch daily challenge questions: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch daily challenge questions"
         )
 
 

@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime, date
+from datetime import datetime, date, time as dt_time, timezone, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, text
 from sqlalchemy.orm import selectinload
@@ -230,11 +230,10 @@ class ContentRepository:
         """Create a new daily challenge."""
         if expires_at is None:
             # Default to expire at the end of the day
-            from datetime import datetime, time, timezone
-            expires_at = datetime.combine(challenge_date, time.max).replace(tzinfo=timezone.utc)
+            expires_at = datetime.combine(challenge_date, dt_time.max).replace(tzinfo=timezone.utc)
 
         challenge = DailyChallenge(
-            date=datetime.combine(challenge_date, time.min).replace(tzinfo=timezone.utc),
+            date=datetime.combine(challenge_date, dt_time.min).replace(tzinfo=timezone.utc),
             seed=seed,
             dungeon_id=dungeon_id,
             modifiers=modifiers or {},

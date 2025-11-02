@@ -46,6 +46,16 @@ celery_app.conf.task_routes = {
 
 # Configure beat schedule for periodic tasks
 celery_app.conf.beat_schedule = {
+    # Seed questions every 5 minutes for continuous database population
+    "seed-questions-every-5-minutes": {
+        "task": "app.jobs.tasks.daily_tasks.refresh_question_pool",
+        "schedule": 300.0,  # Every 5 minutes (in seconds)
+        "kwargs": {
+            "category": None,  # Rotate through all categories
+            "batch_size": 10,  # Small batch to respect rate limiting
+        },
+        "options": {"queue": "daily"}
+    },
     "generate-daily-challenge": {
         "task": "app.jobs.tasks.daily_tasks.generate_daily_challenge",
         "schedule": 60.0 * 60.0 * 24.0,  # Daily at midnight

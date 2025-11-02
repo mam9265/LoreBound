@@ -28,21 +28,59 @@ def generate_daily_challenge(self):
 
 
 @celery_app.task(bind=True)
-def refresh_question_pool(self, category=None, batch_size=50):
-    """Refresh question pool from external APIs."""
+def refresh_question_pool(self, category=None, batch_size=10):
+    """
+    Background task to continuously fetch questions from OpenTDB API.
+    Runs periodically to keep the question database fresh and populated.
+    Batch size is kept small (10) to respect rate limiting.
+    """
+    import asyncio
+    from ...repositories.base import AsyncSessionLocal
+    from ...repositories.content_repo import ContentRepository
+    from ...services.content_service import ContentService
+    from ...services.trivia_api_client import TriviaAPIClient
+    from ...core.config import settings
+    
+    async def _fetch_questions():
+        async with AsyncSessionLocal() as session:
+            try:
+                content_repo = ContentRepository(session)
+                trivia_client = TriviaAPIClient()
+                content_service = ContentService(content_repo, trivia_client, settings)
+                
+                logger.info(f"🔄 Background seeding: Fetching {batch_size} questions (category: {category or 'all'})")
+                
+                # Fetch questions (respects 5-second rate limit)
+                questions_added = await content_service.refresh_question_pool(
+                    category=category,
+                    batch_size=batch_size,
+                    session=session
+                )
+                
+                await session.commit()
+                logger.info(f"✅ Background seeding: Added {questions_added} new questions")
+                
+                return questions_added
+                
+            except Exception as e:
+                await session.rollback()
+                logger.error(f"❌ Background seeding failed: {e}")
+                raise
+    
     try:
-        logger.info(f"Refreshing question pool for category: {category}")
-        
-        # TODO: Implement question pool refresh using ContentService
-        # This would fetch new questions from trivia APIs
-        
-        logger.info(f"Question pool refresh completed")
-        
-        return {"status": "success", "category": category, "batch_size": batch_size}
+        # Run async function
+        questions_added = asyncio.run(_fetch_questions())
+        return {
+            "status": "success",
+            "category": category or "all",
+            "questions_added": questions_added,
+            "batch_size": batch_size
+        }
         
     except Exception as exc:
         logger.error(f"Question pool refresh failed: {exc}")
-        raise
+        # Retry after 5 minutes if failed
+        raise self.retry(exc=exc, countdown=300, max_retries=3)
 
 
 @celery_app.task(bind=True)

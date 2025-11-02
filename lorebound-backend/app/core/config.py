@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field(default="RS256", alias="JWT_ALG")
     jwt_private_key_path: str = Field(alias="JWT_PRIVATE_KEY_PATH")
     jwt_public_key_path: str = Field(alias="JWT_PUBLIC_KEY_PATH")
-    access_token_ttl_seconds: int = Field(default=900, alias="ACCESS_TOKEN_TTL_SECONDS")
-    refresh_token_ttl_seconds: int = Field(default=1209600, alias="REFRESH_TOKEN_TTL_SECONDS")
+    access_token_ttl_seconds: int = Field(default=3600, alias="ACCESS_TOKEN_TTL_SECONDS")  # 1 hour
+    refresh_token_ttl_seconds: int = Field(default=1209600, alias="REFRESH_TOKEN_TTL_SECONDS")  # 14 days
     
     # Apple Sign-In (optional for development)
     apple_team_id: str = Field(default="", alias="APPLE_TEAM_ID")

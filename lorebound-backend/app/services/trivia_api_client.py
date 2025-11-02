@@ -59,6 +59,10 @@ class TriviaAPIClient:
         
         # Trivia API configuration  
         self.trivia_api_base_url = "https://the-trivia-api.com/api/questions"
+        
+        # Rate limiting: OpenTDB allows 1 request per 5 seconds per IP
+        self.opentdb_last_request_time: float = 0
+        self.opentdb_rate_limit_seconds: float = 5.0
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -71,6 +75,24 @@ class TriviaAPIClient:
         """Async context manager exit."""
         if self.session:
             await self.session.close()
+
+    async def _enforce_opentdb_rate_limit(self):
+        """
+        Enforce OpenTDB rate limit: 1 request per 5 seconds per IP.
+        Sleeps if necessary to respect the rate limit.
+        """
+        import time
+        current_time = time.time()
+        time_since_last_request = current_time - self.opentdb_last_request_time
+        
+        if time_since_last_request < self.opentdb_rate_limit_seconds:
+            sleep_time = self.opentdb_rate_limit_seconds - time_since_last_request
+            logger.info(f"Rate limiting: waiting {sleep_time:.2f}s before next OpenTDB request")
+            await asyncio.sleep(sleep_time)
+        
+        # Update last request time
+        import time
+        self.opentdb_last_request_time = time.time()
 
     async def get_categories(self, provider: TriviaAPIProvider = TriviaAPIProvider.OPENTDB) -> List[TriviaCategory]:
         """Fetch available categories from trivia API."""
@@ -118,6 +140,9 @@ class TriviaAPIClient:
         """Fetch questions from Open Trivia Database."""
         if not self.session:
             raise TriviaAPIError("HTTP session not initialized")
+
+        # Enforce rate limit: 1 request per 5 seconds
+        await self._enforce_opentdb_rate_limit()
 
         # Build parameters
         params = {
@@ -222,6 +247,9 @@ class TriviaAPIClient:
         """Fetch categories from OpenTDB."""
         if not self.session:
             raise TriviaAPIError("HTTP session not initialized")
+
+        # Enforce rate limit: 1 request per 5 seconds
+        await self._enforce_opentdb_rate_limit()
 
         try:
             async with self.session.get(self.opentdb_categories_url) as response:
