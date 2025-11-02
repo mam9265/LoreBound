@@ -16,6 +16,10 @@ function RunResults({ navigation, route }) {
     correctAnswers,
     maxStreak,
     dungeonName,
+    isVictory = true,
+    totalQuestions = 10,
+    isDailyChallenge = false,
+    challengeModifiers = {},
   } = route.params || {};
 
   const accuracy = questionsAnswered > 0
@@ -45,8 +49,28 @@ function RunResults({ navigation, route }) {
       <View style={resultStyles.content}>
         {/* Header */}
         <View style={resultStyles.header}>
-          <Text style={resultStyles.title}>Run Complete!</Text>
+          {isDailyChallenge && (
+            <Text style={resultStyles.dailyBadge}>🏆 DAILY CHALLENGE 🏆</Text>
+          )}
+          <Text style={[resultStyles.title, !isVictory && resultStyles.defeatTitle]}>
+            {isVictory ? 'Victory!' : 'Defeated!'}
+          </Text>
           <Text style={resultStyles.subtitle}>{dungeonName}</Text>
+          {isVictory && (
+            <Text style={resultStyles.victorySubtext}>
+              {isDailyChallenge ? 'Challenge Complete!' : 'Dungeon Cleared!'} {questionsAnswered}/{totalQuestions} Questions
+            </Text>
+          )}
+          {!isVictory && (
+            <Text style={resultStyles.defeatSubtext}>
+              You ran out of lives. {questionsAnswered}/{totalQuestions} Questions
+            </Text>
+          )}
+          {isDailyChallenge && challengeModifiers.points_multiplier && (
+            <Text style={resultStyles.bonusText}>
+              ✨ {challengeModifiers.points_multiplier}x Points Bonus Applied! ✨
+            </Text>
+          )}
         </View>
 
         {/* Score Card */}
@@ -85,35 +109,48 @@ function RunResults({ navigation, route }) {
 
         {/* Performance Message */}
         <View style={resultStyles.messageCard}>
-          {accuracy >= 90 && (
+          {isVictory ? (
+            // Victory messages based on accuracy
             <>
-              <Text style={resultStyles.messageTitle}>Legendary!</Text>
-              <Text style={resultStyles.messageText}>
-                Outstanding performance! You're a trivia master!
-              </Text>
+              {accuracy >= 90 && (
+                <>
+                  <Text style={resultStyles.messageTitle}>Legendary!</Text>
+                  <Text style={resultStyles.messageText}>
+                    Outstanding performance! You're a trivia master!
+                  </Text>
+                </>
+              )}
+              {accuracy >= 75 && accuracy < 90 && (
+                <>
+                  <Text style={resultStyles.messageTitle}>Excellent!</Text>
+                  <Text style={resultStyles.messageText}>
+                    Great job! You really know your stuff!
+                  </Text>
+                </>
+              )}
+              {accuracy >= 60 && accuracy < 75 && (
+                <>
+                  <Text style={resultStyles.messageTitle}>Well Done!</Text>
+                  <Text style={resultStyles.messageText}>
+                    Nice work! You cleared the dungeon!
+                  </Text>
+                </>
+              )}
+              {accuracy < 60 && (
+                <>
+                  <Text style={resultStyles.messageTitle}>Victory!</Text>
+                  <Text style={resultStyles.messageText}>
+                    You made it through! Try to improve your accuracy next time!
+                  </Text>
+                </>
+              )}
             </>
-          )}
-          {accuracy >= 75 && accuracy < 90 && (
-            <>
-              <Text style={resultStyles.messageTitle}>Excellent!</Text>
-              <Text style={resultStyles.messageText}>
-                Great job! You really know your stuff!
-              </Text>
-            </>
-          )}
-          {accuracy >= 60 && accuracy < 75 && (
-            <>
-              <Text style={resultStyles.messageTitle}>Well Done!</Text>
-              <Text style={resultStyles.messageText}>
-                Nice work! Keep practicing to improve even more!
-              </Text>
-            </>
-          )}
-          {accuracy < 60 && (
+          ) : (
+            // Defeat messages
             <>
               <Text style={resultStyles.messageTitle}>Keep Trying!</Text>
               <Text style={resultStyles.messageText}>
-                Every run makes you stronger. Try again!
+                Every run makes you stronger. Study up and try again!
               </Text>
             </>
           )}
@@ -201,6 +238,35 @@ const resultStyles = StyleSheet.create({
   subtitle: {
     fontSize: 18,
     color: '#a0c1d1',
+  },
+  defeatTitle: {
+    color: '#ff4444',
+  },
+  victorySubtext: {
+    fontSize: 14,
+    color: '#4caf50',
+    marginTop: 8,
+    fontWeight: '600',
+  },
+  defeatSubtext: {
+    fontSize: 14,
+    color: '#ff8888',
+    marginTop: 8,
+    fontWeight: '600',
+  },
+  dailyBadge: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffd700',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  bonusText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4caf50',
+    marginTop: 8,
+    textAlign: 'center',
   },
   scoreCard: {
     backgroundColor: '#19376d',
