@@ -4,15 +4,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    padding: 20,
     backgroundColor: '#a5d7e8',
   },
   title: {
-    fontSize: 40,
+    fontSize: 48,
     fontWeight: '600',
-    marginBottom: 20,
-    marginTop: 10,
+    marginBottom: 40,
     textAlign: 'center',
     color: '#19376d'
   },
@@ -40,32 +38,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 12,
+    gap: 20,
   },
   dungeonButton: {
-    backgroundColor: "#19376d", 
-    borderRadius: 12,
-    width: '45%',
-    minHeight: 130,
+    backgroundColor: "#0C2454", 
+    borderRadius: 20,
+    width: 160,
+    height: 80,
     justifyContent: "center",
     alignItems: "center",
-    marginVertical: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    margin: 10,
+    padding: 10,
   },
   dungeonTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 6,
-    marginBottom: 4,
-    lineHeight: 20,
+  color: '#ffffff',
+  fontSize: 22,
+  fontFamily: 'serif',
+  textAlign: 'center',
+  textTransform: 'capitalize',
   },
   dungeonSelectText: {
     color: '#ffffff',
@@ -80,11 +70,10 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   dungeonFloors: {
-    color: "#a0c1d1",
-    fontSize: 12,
+    color: "white",
+    fontSize: 14,
+    fontFamily: "serif",
     textAlign: "center",
-    marginTop: 2,
-    lineHeight: 16,
   },
   headerBox: {
     backgroundColor: '#19376d',
@@ -125,24 +114,69 @@ const styles = StyleSheet.create({
     backgroundColor: '#a5d7e8',
   },
 
+  // Outer container in landscape
+  authContainerLandscape: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly', // spread both sides evenly
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+
+  // Left title area
+  authTitleContainerLandscape: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingRight: 60, // push away from form
+  },
+
+  // Right form area
+  authFormContainerLandscape: {
+    flex: 1,
+    alignSelf: 'center',
+    maxWidth: 400,
+  },
+
+  authTitleContainerLandscape: {
+    width: '45%',
+    alignItems: 'flex-end',
+    paddingRight: 40,
+    justifyContent: 'center',
+  },
+
+  authScrollContentLandscape: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+
   authInnerContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    padding: 20,
+  },
+
+  authInnerContainerLandscape: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+
+  authTitleContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
   },
 
   authFormContainer: {
-    width: '100%',
-    maxWidth: 400,
+    width: '90%',
     backgroundColor: '#fff',
-    borderRadius: 15,
     padding: 20,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowRadius: 8,
     elevation: 3,
+    alignSelf: 'center',
   },
 
   inputContainer: {

@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator,
+  useWindowDimensions,
+  ScrollView,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from '../styles/Styles';
 import ApiService from '../services/api';
@@ -12,6 +23,9 @@ function AuthScreen({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
@@ -23,7 +37,9 @@ function AuthScreen({ navigation }) {
       await AsyncStorage.setItem('access_token', response.tokens.access_token);
       await AsyncStorage.setItem('refresh_token', response.tokens.refresh_token);
       await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
-      Alert.alert('Success', 'Login successful!', [{ text: 'OK', onPress: () => navigation.navigate('MainMenu') }]);
+      Alert.alert('Success', 'Login successful!', [
+        { text: 'OK', onPress: () => navigation.navigate('MainMenu') },
+      ]);
     } catch (error) {
       Alert.alert('Login Failed', error.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -50,7 +66,9 @@ function AuthScreen({ navigation }) {
       await AsyncStorage.setItem('access_token', response.tokens.access_token);
       await AsyncStorage.setItem('refresh_token', response.tokens.refresh_token);
       await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
-      Alert.alert('Success', 'Registration successful!', [{ text: 'OK', onPress: () => navigation.navigate('MainMenu') }]);
+      Alert.alert('Success', 'Registration successful!', [
+        { text: 'OK', onPress: () => navigation.navigate('MainMenu') },
+      ]);
     } catch (error) {
       Alert.alert('Registration Failed', error.message || 'Registration failed. Please try again.');
     } finally {
@@ -66,14 +84,19 @@ function AuthScreen({ navigation }) {
     setConfirmPassword('');
   };
 
-return (
-  <KeyboardAvoidingView
-    style={styles.authContainer}
-    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-  >
-    <View style={styles.authInnerContainer}>
-      {/* Game Title */}
-      <View style={styles.authTitleContainer}>
+  return (
+    <KeyboardAvoidingView
+      style={[
+        styles.authContainer,
+        isLandscape && styles.authContainerLandscape,
+      ]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* LEFT SIDE - Title */}
+      <View style={[
+        styles.authTitleContainer,
+        isLandscape ? styles.authTitleContainerLandscape : null,
+      ]}>
         <Text style={styles.authTitle}>
           <Text style={styles.lore}>Lore</Text>
           <Text style={styles.bound}>Bound</Text>
@@ -83,89 +106,103 @@ return (
         </Text>
       </View>
 
-      {/* Auth Form */}
-      <View style={styles.authFormContainer}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your email"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
-
-        {!isLogin && (
+      {/* RIGHT SIDE - Form */}
+      <ScrollView
+        contentContainerStyle={[
+          styles.authScrollContent,
+          isLandscape && styles.authScrollContentLandscape,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={[
+          styles.authFormContainer,
+          isLandscape && styles.authFormContainerLandscape,
+        ]}>
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Username</Text>
+            <Text style={styles.inputLabel}>Email</Text>
             <TextInput
               style={styles.input}
-              placeholder="Choose a username"
+              placeholder="Enter your email"
               placeholderTextColor="#999"
-              value={username}
-              onChangeText={setUsername}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />
           </View>
-        )}
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your password"
-            placeholderTextColor="#999"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
+          {!isLogin && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Username</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Choose a username"
+                placeholderTextColor="#999"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+          )}
 
-        {!isLogin && (
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Confirm Password</Text>
+            <Text style={styles.inputLabel}>Password</Text>
             <TextInput
               style={styles.input}
-              placeholder="Confirm your password"
+              placeholder="Enter your password"
               placeholderTextColor="#999"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              value={password}
+              onChangeText={setPassword}
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
             />
           </View>
-        )}
 
-        <TouchableOpacity
-          style={[styles.authButton, loading && styles.authButtonDisabled]}
-          onPress={isLogin ? handleLogin : handleRegister}
-          disabled={loading}
-        >
-          {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.authButtonText}>{isLogin ? 'Login' : 'Register'}</Text>}
-        </TouchableOpacity>
+          {!isLogin && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Confirm Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm your password"
+                placeholderTextColor="#999"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+          )}
 
-        <View style={styles.authToggleContainer}>
-          <Text style={styles.authToggleText}>
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-          </Text>
-          <TouchableOpacity onPress={toggleAuthMode}>
-            <Text style={styles.authToggleLink}>
-              {isLogin ? 'Register' : 'Login'}
-            </Text>
+          <TouchableOpacity
+            style={[styles.authButton, loading && styles.authButtonDisabled]}
+            onPress={isLogin ? handleLogin : handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.authButtonText}>{isLogin ? 'Login' : 'Register'}</Text>
+            )}
           </TouchableOpacity>
+
+          <View style={styles.authToggleContainer}>
+            <Text style={styles.authToggleText}>
+              {isLogin ? "Don't have an account? " : 'Already have an account? '}
+            </Text>
+            <TouchableOpacity onPress={toggleAuthMode}>
+              <Text style={styles.authToggleLink}>
+                {isLogin ? 'Register' : 'Login'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </View>
-  </KeyboardAvoidingView>
-);
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
 }
 
 export default AuthScreen;
