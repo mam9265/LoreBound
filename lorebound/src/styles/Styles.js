@@ -41,21 +41,29 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   dungeonButton: {
-    backgroundColor: "#0C2454", 
-    borderRadius: 20,
-    width: 160,
-    height: 80,
+    backgroundColor: "#19376d", 
+    borderRadius: 16,
+    width: '45%',  // Responsive width
+    minHeight: 140,  // Much taller for better content display
     justifyContent: "center",
     alignItems: "center",
     margin: 10,
-    padding: 10,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
   },
   dungeonTitle: {
-  color: '#ffffff',
-  fontSize: 22,
-  fontFamily: 'serif',
-  textAlign: 'center',
-  textTransform: 'capitalize',
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: 'serif',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginTop: 8,
+    marginBottom: 6,
   },
   dungeonSelectText: {
     color: '#ffffff',
@@ -70,10 +78,11 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   dungeonFloors: {
-    color: "white",
-    fontSize: 14,
+    color: "#a0c1d1",  // Lighter color for better contrast
+    fontSize: 13,
     fontFamily: "serif",
     textAlign: "center",
+    marginTop: 4,
   },
   headerBox: {
     backgroundColor: '#19376d',

@@ -59,10 +59,10 @@ function DungeonSelect({ navigation }) {
             style={styles.dungeonButton}
             onPress={() => handleDungeonPress(dungeon)}
           >
-            <Text style={{ fontSize: 32, marginBottom: 6 }}>
+            <Text style={{ fontSize: 36, marginBottom: 8 }}>
               {ContentService.getCategoryIcon(dungeon.category)}
             </Text>
-            <Text style={styles.dungeonTitle} numberOfLines={2}>
+            <Text style={styles.dungeonTitle} numberOfLines={2} ellipsizeMode="tail">
               {dungeon.title}
             </Text>
             <Text style={styles.dungeonFloors}>
