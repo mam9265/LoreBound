@@ -12,7 +12,7 @@ import {
 import { RunService } from '../services';
 import styles from '../styles/Styles';
 
-function RunHistory({ navigation }) {
+function RunHistory({ navigation, route }) {
   const [runs, setRuns] = useState([]);
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -251,11 +251,20 @@ function RunHistory({ navigation }) {
 
   return (
     <View style={historyStyles.container}>
-      {/* Header Bar */}
+      {/* Header Bar - positioned absolutely to ensure it's always on top */}
       <View style={historyStyles.headerBar}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
           style={historyStyles.backButton}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          onPress={() => {
+            // Direct navigation - go back if possible
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('MainMenu');
+            }
+          }}
         >
           <Text style={historyStyles.backButtonText}>← Back</Text>
         </TouchableOpacity>
@@ -263,7 +272,7 @@ function RunHistory({ navigation }) {
         <View style={historyStyles.placeholder} />
       </View>
 
-      {/* List */}
+      {/* List - with padding top to account for header */}
       <FlatList
         data={runs}
         renderItem={renderRunItem}
@@ -281,6 +290,7 @@ function RunHistory({ navigation }) {
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         contentContainerStyle={historyStyles.listContent}
+        style={historyStyles.list}
       />
     </View>
   );
@@ -296,12 +306,25 @@ const historyStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    paddingTop: 50, // Account for status bar
     backgroundColor: '#19376d',
     borderBottomWidth: 2,
     borderBottomColor: '#0b2447',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    elevation: 1000,
   },
   backButton: {
     padding: 8,
+    minWidth: 60,
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 11,
+    elevation: 11,
   },
   backButtonText: {
     color: '#4a90e2',
@@ -315,6 +338,10 @@ const historyStyles = StyleSheet.create({
   },
   placeholder: {
     width: 60,
+  },
+  list: {
+    flex: 1,
+    marginTop: 70, // Space for header bar
   },
   listContent: {
     padding: 16,

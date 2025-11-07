@@ -89,8 +89,9 @@ class TriviaAPIClient:
             sleep_time = self.opentdb_rate_limit_seconds - time_since_last_request
             logger.info(f"Rate limiting: waiting {sleep_time:.2f}s before next OpenTDB request")
             await asyncio.sleep(sleep_time)
-        
-        # Update last request time
+    
+    def _update_opentdb_request_time(self):
+        """Update the last request time after a successful request."""
         import time
         self.opentdb_last_request_time = time.time()
 
@@ -141,9 +142,6 @@ class TriviaAPIClient:
         if not self.session:
             raise TriviaAPIError("HTTP session not initialized")
 
-        # Enforce rate limit: 1 request per 5 seconds
-        await self._enforce_opentdb_rate_limit()
-
         # Build parameters
         params = {
             "amount": min(amount, 50),  # OpenTDB max is 50
@@ -167,11 +165,26 @@ class TriviaAPIClient:
 
         # Fetch questions with retry logic
         for attempt in range(self.max_retries):
+            # Enforce rate limit before each attempt
+            await self._enforce_opentdb_rate_limit()
+            
             try:
                 async with self.session.get(self.opentdb_base_url, params=params) as response:
                     if response.status == 200:
                         data = await response.json()
+                        # Only update request time on successful request
+                        self._update_opentdb_request_time()
                         return self._parse_opentdb_response(data)
+                    elif response.status == 429:
+                        # Rate limited - wait longer before retry
+                        wait_time = self.opentdb_rate_limit_seconds * (attempt + 2)  # 10s, 15s, 20s
+                        logger.warning(f"OpenTDB returned 429 (rate limited). Waiting {wait_time}s before retry {attempt + 1}/{self.max_retries}")
+                        # Don't update request time for failed requests
+                        if attempt < self.max_retries - 1:
+                            await asyncio.sleep(wait_time)
+                            continue
+                        else:
+                            raise TriviaAPIError(f"OpenTDB API error: 429 (rate limited)")
                     else:
                         logger.warning(f"OpenTDB returned status {response.status}")
                         if attempt == self.max_retries - 1:
@@ -183,12 +196,23 @@ class TriviaAPIClient:
                     raise TriviaAPIError("OpenTDB request timeout")
 
             except Exception as e:
-                logger.error(f"OpenTDB request failed (attempt {attempt + 1}): {e}")
+                # Check if it's a TriviaAPIError from response parsing (like response_code != 0)
+                if isinstance(e, TriviaAPIError):
+                    # If it's a "No results" error, don't retry - this is expected for some category/difficulty combos
+                    if "No results" in str(e) or "insufficient questions" in str(e).lower():
+                        logger.debug(f"OpenTDB returned no results for this category/difficulty combo: {e}")
+                        raise
+                    logger.warning(f"OpenTDB API error (attempt {attempt + 1}): {e}")
+                else:
+                    logger.error(f"OpenTDB request failed (attempt {attempt + 1}): {e}")
                 if attempt == self.max_retries - 1:
                     raise TriviaAPIError(f"OpenTDB request failed: {e}")
 
-            # Wait before retry
-            await asyncio.sleep(2 ** attempt)
+            # Wait before retry (exponential backoff)
+            if attempt < self.max_retries - 1:
+                wait_time = 2 ** attempt
+                logger.info(f"Waiting {wait_time}s before retry {attempt + 2}/{self.max_retries}")
+                await asyncio.sleep(wait_time)
 
         raise TriviaAPIError("Max retries exceeded")
 
@@ -255,6 +279,8 @@ class TriviaAPIClient:
             async with self.session.get(self.opentdb_categories_url) as response:
                 if response.status == 200:
                     data = await response.json()
+                    # Update request time on successful request
+                    self._update_opentdb_request_time()
                     categories = []
                     for cat in data.get("trivia_categories", []):
                         categories.append(TriviaCategory(
@@ -262,6 +288,8 @@ class TriviaAPIClient:
                             name=cat["name"]
                         ))
                     return categories
+                elif response.status == 429:
+                    raise TriviaAPIError("OpenTDB API error: 429 (rate limited)")
                 else:
                     raise TriviaAPIError(f"Failed to fetch categories: {response.status}")
 

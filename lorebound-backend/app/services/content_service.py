@@ -143,6 +143,7 @@ class ContentService:
 
             # Ensure dungeon relationship is loaded
             if not hasattr(challenge, 'dungeon') or challenge.dungeon is None:
+                from sqlalchemy import select
                 from sqlalchemy.orm import selectinload
                 stmt = select(DailyChallenge).where(DailyChallenge.id == challenge.id).options(selectinload(DailyChallenge.dungeon))
                 result = await session.execute(stmt)
@@ -219,13 +220,20 @@ class ContentService:
         self,
         category: Optional[str] = None,
         batch_size: int = 50,
+        difficulty: Optional[str] = None,
         session: AsyncSession = None
     ) -> int:
         """
         Refresh question pool from external trivia APIs.
         This can be run as a background job to keep questions fresh.
+        
+        Args:
+            category: Optional specific category to populate
+            batch_size: Number of questions to fetch per category/difficulty combo
+            difficulty: Optional specific difficulty to populate (easy, medium, hard)
+            session: Database session
         """
-        logger.info(f"Refreshing question pool for category: {category}")
+        logger.info(f"Refreshing question pool for category: {category}, difficulty: {difficulty or 'all'}")
 
         try:
             total_added = 0
@@ -240,37 +248,170 @@ class ContentService:
             else:
                 categories_to_fetch = list(DungeonCategory)
 
+            skipped_combos = []
+            # Filter difficulties if specified
+            if difficulty:
+                try:
+                    difficulty_enum = QuestionDifficulty(difficulty.lower())
+                    difficulties_to_fetch = [difficulty_enum]
+                except ValueError:
+                    raise ContentError(f"Invalid difficulty: {difficulty}. Valid options: easy, medium, hard")
+            else:
+                difficulties_to_fetch = list(QuestionDifficulty)
+            
+            total_combos = len(categories_to_fetch) * len(difficulties_to_fetch)
+            combo_num = 0
             async with self.trivia_client:
+                logger.info(f"Processing {total_combos} category/difficulty combinations...")
                 for cat in categories_to_fetch:
-                    for difficulty in QuestionDifficulty:
+                    for difficulty in difficulties_to_fetch:
+                        combo_num += 1
+                        logger.info(f"[{combo_num}/{total_combos}] Fetching {cat.value}/{difficulty.value} (target: {batch_size} questions)...")
+                        
+                        # OpenTDB max is 50 per request, so make multiple requests if needed
+                        opentdb_max_per_request = 50
+                        questions_needed = batch_size
+                        questions_stored_for_combo = 0
+                        request_num = 0
+                        consecutive_no_new = 0  # Track consecutive requests with no new questions
+                        
                         try:
-                            # Fetch questions from external API
-                            external_questions = await self.trivia_client.fetch_questions(
-                                amount=batch_size,
-                                category=cat.value,
-                                difficulty=difficulty,
-                                provider=TriviaAPIProvider.OPENTDB
-                            )
-
-                            # Convert and store questions
-                            for ext_q in external_questions:
-                                # Check if question already exists (prevent duplicates)
-                                question_hash = self._hash_question(ext_q.question)
-                                existing = await self.content_repo.get_question_by_hash(question_hash, session)
+                            while questions_needed > 0 and consecutive_no_new < 3:  # Stop after 3 requests with no new questions
+                                request_num += 1
+                                request_amount = min(questions_needed, opentdb_max_per_request)
                                 
-                                if not existing:
-                                    await self._store_external_question(ext_q, cat, difficulty, session)
-                                    total_added += 1
+                                if request_num > 1:
+                                    logger.info(f"  Making additional request {request_num} for {cat.value}/{difficulty.value} ({request_amount} questions)...")
+                                
+                                # Fetch questions from external API
+                                external_questions = await self.trivia_client.fetch_questions(
+                                    amount=request_amount,
+                                    category=cat.value,
+                                    difficulty=difficulty,
+                                    provider=TriviaAPIProvider.OPENTDB
+                                )
+
+                                # Convert and store questions
+                                new_in_this_batch = 0
+                                for ext_q in external_questions:
+                                    # Check if question already exists (prevent duplicates)
+                                    question_hash = self._hash_question(ext_q.question)
+                                    existing = await self.content_repo.get_question_by_hash(question_hash, session)
+                                    
+                                    if not existing:
+                                        await self._store_external_question(ext_q, cat, difficulty, session)
+                                        total_added += 1
+                                        questions_stored_for_combo += 1
+                                        new_in_this_batch += 1
+                                
+                                if new_in_this_batch > 0:
+                                    consecutive_no_new = 0  # Reset counter
+                                    logger.info(f"  ✓ Batch {request_num}: Added {new_in_this_batch} new questions ({questions_stored_for_combo}/{batch_size} total)")
+                                    questions_needed = max(0, batch_size - questions_stored_for_combo)
+                                    
+                                    # If we got fewer questions than requested, we might be running out
+                                    if len(external_questions) < request_amount:
+                                        logger.info(f"  Note: Received {len(external_questions)} questions (less than requested {request_amount}) - may be limited")
+                                        break  # API returned fewer questions than available
+                                else:
+                                    consecutive_no_new += 1
+                                    if consecutive_no_new < 3:
+                                        logger.info(f"  Batch {request_num}: No new questions (duplicates or exhausted). Continuing...")
+                                    questions_needed = max(0, batch_size - questions_stored_for_combo)
+                                
+                                # Stop if we've reached our target
+                                if questions_stored_for_combo >= batch_size:
+                                    break
+                            
+                            if questions_stored_for_combo > 0:
+                                logger.info(f"✓ Total: Added {questions_stored_for_combo} new {cat.value}/{difficulty.value} questions")
+                            else:
+                                logger.debug(f"  No new questions for {cat.value}/{difficulty.value} (may already exist)")
 
                         except TriviaAPIError as e:
-                            logger.warning(f"Failed to fetch questions for {cat.value}/{difficulty.value}: {e}")
+                            error_msg = str(e)
+                            if "No results" in error_msg or "insufficient questions" in error_msg.lower():
+                                # This is expected - some category/difficulty combos don't exist in OpenTDB
+                                logger.info(f"  ⚠ Skipping {cat.value}/{difficulty.value}: No questions available in OpenTDB (this is normal, trying fallback...)")
+                                skipped_combos.append(f"{cat.value}/{difficulty.value}")
+                                
+                                # Try fallback: fetch without difficulty filter, then filter by difficulty from response
+                                try:
+                                    logger.info(f"  Trying fallback: fetching {cat.value} questions without difficulty filter...")
+                                    
+                                    # Make multiple fallback requests to get enough questions after filtering
+                                    fallback_questions_needed = batch_size
+                                    fallback_questions_stored = 0
+                                    fallback_request_num = 0
+                                    fallback_consecutive_no_new = 0
+                                    
+                                    # Need to fetch more because we'll filter by difficulty (only ~1/3 will match)
+                                    while fallback_questions_needed > 0 and fallback_request_num < 5 and fallback_consecutive_no_new < 3:
+                                        fallback_request_num += 1
+                                        # Fetch 3x what we need to account for difficulty filtering
+                                        fallback_fetch_amount = min(fallback_questions_needed * 3, opentdb_max_per_request)
+                                        
+                                        if fallback_request_num > 1:
+                                            logger.info(f"  Fallback request {fallback_request_num} for {cat.value}...")
+                                        
+                                        external_questions = await self.trivia_client.fetch_questions(
+                                            amount=fallback_fetch_amount,
+                                            category=cat.value,
+                                            difficulty=None,  # No difficulty filter
+                                            provider=TriviaAPIProvider.OPENTDB
+                                        )
+                                        
+                                        # Filter questions by the difficulty we need
+                                        filtered_questions = [
+                                            q for q in external_questions 
+                                            if q.difficulty.lower() == difficulty.value.lower()
+                                        ]
+                                        
+                                        new_in_fallback_batch = 0
+                                        if filtered_questions:
+                                            for ext_q in filtered_questions:
+                                                if fallback_questions_stored >= batch_size:
+                                                    break
+                                                question_hash = self._hash_question(ext_q.question)
+                                                existing = await self.content_repo.get_question_by_hash(question_hash, session)
+                                                
+                                                if not existing:
+                                                    await self._store_external_question(ext_q, cat, difficulty, session)
+                                                    total_added += 1
+                                                    fallback_questions_stored += 1
+                                                    new_in_fallback_batch += 1
+                                        
+                                        if new_in_fallback_batch > 0:
+                                            fallback_consecutive_no_new = 0
+                                            logger.info(f"  ✓ Fallback batch {fallback_request_num}: Added {new_in_fallback_batch} new {difficulty.value} questions ({fallback_questions_stored}/{batch_size} total)")
+                                            fallback_questions_needed = max(0, batch_size - fallback_questions_stored)
+                                        else:
+                                            fallback_consecutive_no_new += 1
+                                            if fallback_consecutive_no_new < 3:
+                                                logger.debug(f"  Fallback batch {fallback_request_num}: No new {difficulty.value} questions in this batch")
+                                        
+                                        if fallback_questions_stored >= batch_size:
+                                            break
+                                    
+                                    if fallback_questions_stored > 0:
+                                        logger.info(f"✓ Total: Added {fallback_questions_stored} {cat.value}/{difficulty.value} questions via fallback")
+                                    else:
+                                        logger.info(f"  ⚠ No {difficulty.value} questions found in {cat.value} via fallback")
+                                except TriviaAPIError as fallback_error:
+                                    logger.info(f"  ⚠ Fallback also failed for {cat.value}/{difficulty.value}: {fallback_error}")
+                            else:
+                                # Other errors (rate limiting, network, etc.)
+                                logger.warning(f"⚠ Failed to fetch {cat.value}/{difficulty.value}: {e}")
+                                skipped_combos.append(f"{cat.value}/{difficulty.value} (error)")
                             continue
 
             # Commit all the new questions to database
             if session:
                 await session.commit()
             
-            logger.info(f"Successfully added {total_added} new questions to pool")
+            logger.info(f"✓ Successfully added {total_added} new questions to pool")
+            if skipped_combos:
+                logger.info(f"  Note: Skipped {len(skipped_combos)} category/difficulty combinations with no questions available: {', '.join(skipped_combos[:10])}{' ...' if len(skipped_combos) > 10 else ''}")
             return total_added
 
         except Exception as e:

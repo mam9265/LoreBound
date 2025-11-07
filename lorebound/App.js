@@ -33,14 +33,14 @@ export default function App() {
         <Stack.Screen name="CharacterCustomization" component={CharacterCustomization} />
         <Stack.Screen name="Leaderboard" component={Leaderboards} />
         <Stack.Screen name="RunGameplay" component={RunGameplay} />
-        <Stack.Screen name="RunResults" component={RunResults} />
-        <Stack.Screen name="RunHistory" component={RunHistory} />
         <Stack.Screen name="SportDungeon" component={SportDungeon} />
         <Stack.Screen name="MusicDungeon" component={MusicDungeon} />
         <Stack.Screen name="HistoryDungeon" component={HistoryDungeon} />
         <Stack.Screen name="BookDungeon" component={BookDungeon} />
         <Stack.Screen name="PopCultureDungeon" component={PopCultureDungeon} />
         <Stack.Screen name="AllAroundDungeon" component={AllAroundDungeon} />
+        <Stack.Screen name="RunResults" component={RunResults} />
+        <Stack.Screen name="RunHistory" component={RunHistory} />
       </Stack.Navigator>
     </NavigationContainer>
   );

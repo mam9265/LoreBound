@@ -21,25 +21,26 @@ from app.services.content_service import ContentService
 from app.services.trivia_api_client import TriviaAPIClient
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.domain.enums import DungeonCategory
+from app.domain.enums import DungeonCategory, QuestionDifficulty
 
 logger = get_logger(__name__)
 
 
-async def populate_questions(category: str = None, questions_per_category: int = 100):
+async def populate_questions(category: str = None, questions_per_category: int = 100, difficulty: str = None):
     """
     Populate database with questions from external trivia API.
     
     Args:
         category: Optional specific category to populate (music, history, etc.)
         questions_per_category: Number of questions to fetch per category/difficulty combo
+        difficulty: Optional specific difficulty to populate (easy, medium, hard)
     
     Note: OpenTDB has a rate limit of 1 request per 5 seconds per IP.
           This script respects that limit and will pace requests accordingly.
     """
     logger.info("="*60)
     logger.info("Starting question population")
-    logger.info(f"Category: {category or 'all'}, Questions per category: {questions_per_category}")
+    logger.info(f"Category: {category or 'all'}, Difficulty: {difficulty or 'all'}, Questions per combo: {questions_per_category}")
     logger.info("Note: OpenTDB rate limit is 1 request per 5 seconds")
     logger.info("This will take time to respect the rate limit...")
     logger.info("="*60)
@@ -59,6 +60,7 @@ async def populate_questions(category: str = None, questions_per_category: int =
             total_added = await content_service.refresh_question_pool(
                 category=category,
                 batch_size=questions_per_category,
+                difficulty=difficulty,
                 session=session
             )
             
@@ -98,13 +100,20 @@ async def main():
         default=50,
         help="Number of questions to fetch per category/difficulty combo (default: 50)"
     )
+    parser.add_argument(
+        "--difficulty",
+        type=str,
+        choices=[d.value for d in QuestionDifficulty],
+        help="Specific difficulty to populate (easy, medium, hard). If not provided, fetches all difficulties."
+    )
     
     args = parser.parse_args()
     
     try:
         await populate_questions(
             category=args.category,
-            questions_per_category=args.count
+            questions_per_category=args.count,
+            difficulty=args.difficulty
         )
     except Exception as e:
         logger.error(f"Script failed: {e}")

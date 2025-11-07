@@ -5,7 +5,7 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     POETRY_NO_INTERACTION=1 \
-    POETRY_VENV_IN_PROJECT=1 \
+    POETRY_VENV_IN_PROJECT=true \
     POETRY_CACHE_DIR=/tmp/poetry_cache
 
 # Set work directory
@@ -20,24 +20,26 @@ RUN apt-get update && apt-get install -y \
 # Install Poetry
 RUN pip install poetry
 
-# Configure poetry: Don't create virtual environment, install to system
-ENV POETRY_VENV_IN_PROJECT=false
-ENV POETRY_NO_INTERACTION=1
+# Poetry is configured via ENV above to create venv in project directory
+
+# Create non-root user first
+RUN useradd --create-home --shell /bin/bash app
 
 # Copy dependency files
-COPY pyproject.toml ./
+COPY --chown=app:app pyproject.toml ./
 
-# Install dependencies directly to system Python
+# Switch to app user and install dependencies (creates venv in .venv)
+USER app
 RUN poetry install --only=main --no-root
 
-# Copy application code
-COPY app/ ./app/
-COPY migrations/ ./migrations/
-COPY scripts/ ./scripts/
-COPY alembic.ini ./
+# Copy application code as app user
+USER root
+COPY --chown=app:app app/ ./app/
+COPY --chown=app:app migrations/ ./migrations/
+COPY --chown=app:app scripts/ ./scripts/
+COPY --chown=app:app alembic.ini ./
 
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
+# Switch back to app user
 USER app
 
 # Expose port

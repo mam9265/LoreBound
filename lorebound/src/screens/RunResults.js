@@ -41,7 +41,7 @@ function RunResults({ navigation, route }) {
   };
 
   const handleViewHistory = () => {
-    navigation.navigate('RunHistory');
+    navigation.navigate('RunHistory', { from: 'RunResults' });
   };
 
   return (
