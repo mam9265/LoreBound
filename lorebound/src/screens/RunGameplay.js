@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// RunGameplay.js
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,23 +7,37 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  ImageBackground,
+  Image,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RunService } from '../services';
 import styles from '../styles/Styles';
 
-const QUESTION_TIME_LIMIT = 30; // seconds per question
+// local sprites (used when characterCustomization saved colorIndex)
+import RedKnight from '../assets/RedKnight.png';
+import GreenKnight from '../assets/GreenKnight.png';
+import BlueKnight from '../assets/BlueKnight.png';
+
+// new names you requested
+// background: OldDungeon.png
+// enemy sprite: Wizard.png
+const BACKGROUND = require('../assets/OldDungeon.png');
+const WIZARD = require('../assets/Wizard.png');
+
+const QUESTION_TIME_LIMIT = 30;
 
 function RunGameplay({ navigation, route }) {
-  const { 
-    dungeonId, 
-    dungeonName, 
+  const {
+    dungeonId,
+    dungeonName,
     dungeonCategory,
     isDailyChallenge = false,
     challengeModifiers = {},
     runData: preLoadedRunData = null,
     questions: preLoadedQuestions = null,
   } = route.params || {};
-  
+
   // Run state
   const [runData, setRunData] = useState(preLoadedRunData);
   const [questions, setQuestions] = useState(preLoadedQuestions || []);
@@ -30,155 +45,157 @@ function RunGameplay({ navigation, route }) {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [isLoading, setIsLoading] = useState(!preLoadedRunData || !preLoadedQuestions);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Game state
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0); // Track correct answers
+  const [correctCount, setCorrectCount] = useState(0);
   const [timer, setTimer] = useState(QUESTION_TIME_LIMIT);
   const [turnData, setTurnData] = useState([]);
   const [scoresData, setScoresData] = useState([]);
 
-  // Initialize run
+  // Avatar state: store an Image source (either require(...) or { uri: '...' })
+  const [playerSpriteSource, setPlayerSpriteSource] = useState(null);
+
+  // Load avatar / color index from AsyncStorage (check characterData first)
   useEffect(() => {
+    const loadAvatar = async () => {
+      try {
+        // Try the key used by CharacterCustomization first
+        const charJson = await AsyncStorage.getItem('characterData');
+        if (charJson) {
+          const parsed = JSON.parse(charJson);
+          // CharacterCustomization saved colorIndex and equipment
+          if (typeof parsed.colorIndex === 'number') {
+            const sprites = [RedKnight, GreenKnight, BlueKnight];
+            const idx = Math.max(0, Math.min(parsed.colorIndex, sprites.length - 1));
+            setPlayerSpriteSource(sprites[idx]);
+            return;
+          }
+          // fallback to avatarUri field if present
+          if (parsed.avatarUri) {
+            setPlayerSpriteSource({ uri: parsed.avatarUri });
+            return;
+          }
+        }
+
+        // If not found, try legacy save key (saveData)
+        const saveJson = await AsyncStorage.getItem('saveData');
+        if (saveJson) {
+          const parsed = JSON.parse(saveJson);
+          if (parsed.avatarUri) {
+            setPlayerSpriteSource({ uri: parsed.avatarUri });
+            return;
+          }
+          if (parsed.avatar) {
+            // avatar might be a data URI or file path
+            setPlayerSpriteSource({ uri: parsed.avatar });
+            return;
+          }
+        }
+
+        // No avatar found: leave null (UI shows placeholder)
+      } catch (err) {
+        console.warn('Error loading avatar from storage:', err);
+      }
+    };
+
+    loadAvatar();
     initializeRun();
   }, []);
 
-  // Timer countdown
-  useEffect(() => {
-    if (!isLoading && !isSubmitting && timer > 0) {
-      const interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
-      return () => clearInterval(interval);
-    } else if (timer === 0 && !isSubmitting) {
-      // Time's up, treat as wrong answer
-      handleAnswerSubmit(null, true);
-    }
-  }, [timer, isLoading, isSubmitting]);
-
+  // Init run (kept identical logic)
   const initializeRun = async () => {
-    // Skip initialization if we already have pre-loaded data (daily challenge)
     if (preLoadedRunData && preLoadedQuestions && preLoadedQuestions.length > 0) {
-      console.log('Using pre-loaded run data and questions');
       setIsLoading(false);
       return;
     }
-    
     try {
       setIsLoading(true);
-      console.log('Initializing run for dungeon:', dungeonId);
-      
-      // Start run
       const run = await RunService.startRun(dungeonId, 1, {
         device: 'mobile',
         version: '1.0.0',
         is_daily_challenge: isDailyChallenge,
       });
-      
-      console.log('Run started:', run);
       setRunData(run);
 
-      // Get questions
       const questionsData = await RunService.getQuestionsForRun(
         dungeonId,
         run.seed,
-        10, // 10 questions per run
-        1   // floor number
+        10,
+        1
       );
-      
-      console.log('Questions received:', questionsData?.length || 0);
-      
-      // Ensure questionsData is an array
-      const questions = Array.isArray(questionsData) ? questionsData : [];
-      
-      if (questions.length === 0) {
-        throw new Error('No questions available for this dungeon');
-      }
-      
-      setQuestions(questions);
+      const arr = Array.isArray(questionsData) ? questionsData : [];
+      if (arr.length === 0) throw new Error('No questions available for this dungeon');
+      setQuestions(arr);
       setIsLoading(false);
     } catch (error) {
       console.error('Failed to initialize run:', error);
       setIsLoading(false);
-      Alert.alert(
-        'Error',
-        error.message || 'Failed to start dungeon run. Please try again.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      Alert.alert('Error', error.message || 'Failed to start dungeon run.', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
     }
   };
 
+  // Timer countdown
+  useEffect(() => {
+    if (!isLoading && !isSubmitting && timer > 0) {
+      const interval = setInterval(() => setTimer((p) => p - 1), 1000);
+      return () => clearInterval(interval);
+    } else if (timer === 0 && !isSubmitting) {
+      handleAnswerSubmit(null, true);
+    }
+  }, [timer, isLoading, isSubmitting]);
+
+  // Answer select
   const handleAnswerSelect = (answerIndex) => {
-    // Allow changing answer before submission
-    if (!isSubmitting) {
-      setSelectedAnswer(answerIndex);
-    }
+    if (!isSubmitting) setSelectedAnswer(answerIndex);
   };
 
+  // Submit answer (kept same)
   const handleAnswerSubmit = async (answerIndex = selectedAnswer, timedOut = false) => {
     if (isSubmitting) return;
-    
     setIsSubmitting(true);
     const question = questions[currentQuestionIndex];
     const answerTime = timedOut ? QUESTION_TIME_LIMIT : QUESTION_TIME_LIMIT - timer;
-    
-    // Validate answer with backend for real-time feedback
     let isCorrect = false;
-    
+
     if (!timedOut) {
       try {
-        const validation = await RunService.validateAnswer(
-          runData.id,
-          question.id,
-          answerIndex
-        );
+        const validation = await RunService.validateAnswer(runData.id, question.id, answerIndex);
         isCorrect = validation.is_correct;
-      } catch (error) {
-        console.error('Failed to validate answer:', error);
-        // If validation fails, assume incorrect to be safe
+      } catch (e) {
+        console.error('Validation failed:', e);
         isCorrect = false;
       }
     }
 
-    // Calculate points based on actual correctness
     let points = 0;
     let timeBonus = 0;
     let streakBonus = 0;
 
     if (isCorrect) {
-      // Base points by difficulty
-      const basePoints = {
-        easy: 100,
-        medium: 150,
-        hard: 200,
-      }[question.difficulty] || 100;
-
-      // Time bonus (faster = more points, max 50%)
+      const basePoints = { easy: 100, medium: 150, hard: 200 }[question.difficulty] || 100;
       timeBonus = Math.floor(basePoints * 0.5 * (timer / QUESTION_TIME_LIMIT));
-      
-      // Streak bonus (10% per streak, max 100%)
       streakBonus = Math.floor(basePoints * Math.min(streak * 0.1, 1.0));
-
       points = basePoints + timeBonus + streakBonus;
-      
-      // Apply daily challenge multiplier if applicable
+
       if (isDailyChallenge && challengeModifiers.points_multiplier) {
         points = Math.floor(points * challengeModifiers.points_multiplier);
       }
 
-      setScore((prev) => prev + points);
-      setStreak((prev) => prev + 1);
-      setMaxStreak((prev) => Math.max(prev, streak + 1));
-      setCorrectCount((prev) => prev + 1); // Increment correct count
+      setScore((p) => p + points);
+      setStreak((s) => s + 1);
+      setMaxStreak((m) => Math.max(m, streak + 1));
+      setCorrectCount((c) => c + 1);
     } else {
-      setLives((prev) => prev - 1);
+      setLives((l) => l - 1);
       setStreak(0);
     }
 
-    // Record turn data
     const turn = {
       i: currentQuestionIndex,
       qid: question.id,
@@ -187,11 +204,7 @@ function RunGameplay({ navigation, route }) {
       t: Math.floor(answerTime * 1000),
       ts: Date.now(),
       h: await RunService.calculateTurnSignature(
-        {
-          i: currentQuestionIndex,
-          qid: question.id,
-          a: answerIndex ?? -1,
-        },
+        { i: currentQuestionIndex, qid: question.id, a: answerIndex ?? -1 },
         runData.session_token
       ),
     };
@@ -206,233 +219,121 @@ function RunGameplay({ navigation, route }) {
 
     const newTurnData = [...turnData, turn];
     const newScoresData = [...scoresData, scoreEntry];
-    
     setTurnData(newTurnData);
     setScoresData(newScoresData);
 
-    // Check if game over
     const newLives = lives - (isCorrect ? 0 : 1);
     const newCorrectCount = correctCount + (isCorrect ? 1 : 0);
-    
+
     if (newLives <= 0) {
-      // Game over - ran out of lives (defeat)
       await completeRun(newTurnData, newScoresData, false, newCorrectCount);
     } else if (currentQuestionIndex >= questions.length - 1) {
-      // Completed all questions with lives remaining (victory)
       await completeRun(newTurnData, newScoresData, true, newCorrectCount);
     } else {
-      // Next question
       setTimeout(() => {
-        setCurrentQuestionIndex((prev) => prev + 1);
+        setCurrentQuestionIndex((p) => p + 1);
         setSelectedAnswer(null);
         setTimer(QUESTION_TIME_LIMIT);
         setIsSubmitting(false);
-      }, 1000);
+      }, 900);
     }
   };
 
   const completeRun = async (finalTurnData, finalScoresData, isVictory = true, finalCorrectCount = correctCount) => {
     try {
-      const signature = await RunService.calculateAggregateSignature(
-        finalTurnData,
-        runData.session_token
-      );
-
-      const result = await RunService.submitRun(
-        runData.id,
-        finalTurnData,
-        finalScoresData,
-        signature
-      );
-
-      // Use backend's total score but use our tracked correct count
-      // since the backend response doesn't include the detailed scores array
+      const signature = await RunService.calculateAggregateSignature(finalTurnData, runData.session_token);
+      const result = await RunService.submitRun(runData.id, finalTurnData, finalScoresData, signature);
       const actualScore = result.total_score || score;
-
-      // Navigate to results screen with results
       navigation.replace('RunResults', {
         runData: result,
         score: actualScore,
         questionsAnswered: finalTurnData.length,
-        correctAnswers: finalCorrectCount, // Use our tracked correct count
+        correctAnswers: finalCorrectCount,
         maxStreak,
         dungeonName,
-        isVictory, // Pass victory status
-        totalQuestions: questions.length, // Pass total questions
-        isDailyChallenge, // Pass daily challenge status
-        challengeModifiers, // Pass bonus multipliers
+        isVictory,
+        totalQuestions: questions.length,
+        isDailyChallenge,
+        challengeModifiers,
       });
     } catch (error) {
-      console.error('Failed to submit run:', error);
-      Alert.alert(
-        'Error',
-        'Failed to submit run results. Your progress may be lost.',
-        [
-          { text: 'Try Again', onPress: () => completeRun(finalTurnData, finalScoresData, isVictory, finalCorrectCount) },
-          { text: 'Cancel', onPress: () => navigation.goBack() },
-        ]
-      );
+      console.error('Submit run failed:', error);
+      Alert.alert('Error', 'Failed to submit run results.', [
+        { text: 'Try Again', onPress: () => completeRun(finalTurnData, finalScoresData, isVictory, finalCorrectCount) },
+        { text: 'Cancel', onPress: () => navigation.goBack() },
+      ]);
     }
   };
 
   const handleAbandon = () => {
-    Alert.alert(
-      'Abandon Run?',
-      'Are you sure you want to abandon this run? Your progress will be lost.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Abandon',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (runData) {
-                await RunService.abandonRun(runData.id);
-              }
-              navigation.goBack();
-            } catch (error) {
-              console.error('Failed to abandon run:', error);
-              navigation.goBack();
-            }
-          },
+    Alert.alert('Abandon Run?', 'Your progress will be lost.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Abandon',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            if (runData) await RunService.abandonRun(runData.id);
+            navigation.goBack();
+          } catch {
+            navigation.goBack();
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
+  // Loading UI
   if (isLoading) {
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}>
         <ActivityIndicator size="large" color="#19376d" />
-        <Text style={[styles.headerText, { marginTop: 20 }]}>
-          Loading Dungeon...
-        </Text>
-      </View>
-    );
-  }
-
-  // Safety checks
-  if (!questions || questions.length === 0) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', padding: 20 }]}>
-        <Text style={[styles.headerText, { marginBottom: 20, textAlign: 'center' }]}>
-          No questions available
-        </Text>
-        <TouchableOpacity
-          style={[styles.playButton, { backgroundColor: '#19376d' }]}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.playText}>Go Back</Text>
-        </TouchableOpacity>
+        <Text style={[styles.headerText, { marginTop: 20 }]}>Loading Dungeon...</Text>
       </View>
     );
   }
 
   const currentQuestion = questions[currentQuestionIndex];
-  
   if (!currentQuestion) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', padding: 20 }]}>
-        <Text style={[styles.headerText, { marginBottom: 20, textAlign: 'center' }]}>
-          Error loading question
-        </Text>
-        <TouchableOpacity
-          style={[styles.playButton, { backgroundColor: '#19376d' }]}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.playText}>Go Back</Text>
-        </TouchableOpacity>
+      <View style={[styles.container, { justifyContent: 'center' }]}>
+        <Text style={styles.headerText}>No questions available</Text>
       </View>
     );
   }
-  
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   return (
-    <View style={gameStyles.container}>
-      {/* Header */}
-      <View style={gameStyles.header}>
-        <View style={gameStyles.headerRow}>
-          <TouchableOpacity
-            style={gameStyles.abandonButton}
-            onPress={handleAbandon}
-          >
-            <Text style={gameStyles.abandonText}>✕</Text>
-          </TouchableOpacity>
-          
-          <View style={gameStyles.dungeonInfo}>
-            <Text style={gameStyles.dungeonName}>{dungeonName}</Text>
-            <Text style={gameStyles.questionProgress}>
-              Question {currentQuestionIndex + 1} / {questions.length}
-            </Text>
-          </View>
-          
-          <View style={gameStyles.placeholder} />
-        </View>
+    <ImageBackground source={BACKGROUND} style={gameStyles.background} resizeMode="cover">
+      {/* small cancel button in top-left */}
+      <TouchableOpacity style={gameStyles.abandonButton} onPress={handleAbandon}>
+        <Text style={gameStyles.abandonText}>✕</Text>
+      </TouchableOpacity>
 
-        {/* Progress bar */}
-        <View style={gameStyles.progressBarContainer}>
-          <View
-            style={[gameStyles.progressBar, { width: `${progress}%` }]}
-          />
-        </View>
+      {/* compact stats row */}
+      <View style={gameStyles.statsRow}>
+        <Text style={gameStyles.statText}>❤️ {lives}</Text>
+        <Text style={gameStyles.statText}>🔥 {streak}</Text>
+        <Text style={gameStyles.statText}>💯 {score}</Text>
+        <Text style={[gameStyles.statText, timer <= 5 && gameStyles.urgentTime]}>{timer}s</Text>
       </View>
 
-      {/* Stats Bar */}
-      <View style={gameStyles.statsBar}>
-        <View style={gameStyles.stat}>
-          <Text style={gameStyles.statLabel}>Score</Text>
-          <Text style={gameStyles.statValue}>{score}</Text>
-        </View>
-        
-        <View style={gameStyles.stat}>
-          <Text style={gameStyles.statLabel}>Lives</Text>
-          <Text style={gameStyles.statValue}>{'❤️'.repeat(lives)}</Text>
-        </View>
-        
-        <View style={gameStyles.stat}>
-          <Text style={gameStyles.statLabel}>Streak</Text>
-          <Text style={gameStyles.statValue}>{streak}🔥</Text>
-        </View>
-        
-        <View style={gameStyles.stat}>
-          <Text style={gameStyles.statLabel}>Time</Text>
-          <Text style={[gameStyles.statValue, timer <= 5 && gameStyles.urgentTime]}>
-            {timer}s
-          </Text>
-        </View>
-      </View>
+      {/* question displayed directly (no blue container) */}
+      <Text style={gameStyles.questionText}>{currentQuestion.prompt}</Text>
 
-      {/* Question */}
-      <View style={gameStyles.questionContainer}>
-        <Text style={gameStyles.difficulty}>{currentQuestion.difficulty.toUpperCase()}</Text>
-        <Text style={gameStyles.questionText}>{currentQuestion.prompt}</Text>
-      </View>
-
-      {/* Answers */}
-      <View style={gameStyles.answersContainer}>
+      {/* Answers 2x2 grid */}
+      <View style={gameStyles.answersGrid}>
         {currentQuestion.choices.map((choice, index) => {
           const isSelected = selectedAnswer === index;
-
           return (
             <TouchableOpacity
               key={index}
-              style={[
-                gameStyles.answerButton,
-                isSelected && gameStyles.selectedAnswer,
-              ]}
+              style={[gameStyles.answerButton, isSelected && gameStyles.selectedAnswer]}
               onPress={() => handleAnswerSelect(index)}
               disabled={isSubmitting}
+              activeOpacity={0.85}
             >
-              <Text style={gameStyles.answerLetter}>
-                {String.fromCharCode(65 + index)})
-              </Text>
-              <Text
-                style={[
-                  gameStyles.answerText,
-                  isSelected && gameStyles.selectedAnswerText,
-                ]}
-              >
+              <Text style={gameStyles.answerLetter}>{String.fromCharCode(65 + index)})</Text>
+              <Text style={[gameStyles.answerText, isSelected && gameStyles.selectedAnswerText]}>
                 {choice}
               </Text>
             </TouchableOpacity>
@@ -440,203 +341,166 @@ function RunGameplay({ navigation, route }) {
         })}
       </View>
 
-      {/* Submit Button */}
+      {/* Sprites BELOW answers and ABOVE submit */}
+      <View style={gameStyles.battleAreaBelowAnswers}>
+        {/* player avatar left */}
+        {playerSpriteSource ? (
+          <Image source={playerSpriteSource} style={gameStyles.player} />
+        ) : (
+          <View style={gameStyles.placeholderPlayer}>
+            <Text style={{ color: '#fff' }}>No Avatar</Text>
+          </View>
+        )}
+
+        {/* wizard right */}
+        <Image source={WIZARD} style={gameStyles.enemy} />
+      </View>
+
+      {/* Submit Button at bottom */}
       <TouchableOpacity
-        style={[
-          gameStyles.submitButton,
-          selectedAnswer === null && gameStyles.submitButtonDisabled,
-        ]}
+        style={[gameStyles.submitButton, (selectedAnswer === null || isSubmitting) && gameStyles.submitButtonDisabled]}
         onPress={() => handleAnswerSubmit()}
         disabled={selectedAnswer === null || isSubmitting}
       >
-        <Text style={gameStyles.submitButtonText}>
-          {isSubmitting ? 'Processing...' : 'Submit Answer'}
-        </Text>
+        <Text style={gameStyles.submitButtonText}>{isSubmitting ? 'Processing...' : 'Submit Answer'}</Text>
       </TouchableOpacity>
-    </View>
+    </ImageBackground>
   );
 }
 
 const gameStyles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    backgroundColor: '#0b2447',
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    backgroundColor: '#19376d',
-  },
-  headerRow: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    paddingVertical: 8,
   },
+
+  /* small cancel button top-left */
   abandonButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    position: 'absolute',
+    top: 28,
+    left: 12,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: '#a5243d',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 30,
   },
-  abandonText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  dungeonInfo: {
-    alignItems: 'center',
-  },
-  dungeonName: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  questionProgress: {
-    color: '#a0c1d1',
-    fontSize: 14,
-  },
-  placeholder: {
-    width: 40,
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: '#0b2447',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#4a90e2',
-    borderRadius: 4,
-  },
-  statsBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#19376d',
-    borderBottomWidth: 2,
-    borderBottomColor: '#0b2447',
-  },
-  stat: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statLabel: {
-    color: '#a0c1d1',
-    fontSize: 11,
-    marginBottom: 2,
-  },
-  statValue: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  urgentTime: {
-    color: '#ff4444',
-  },
-  questionContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#19376d',
-    marginHorizontal: 12,
+  abandonText: { color: '#fff', fontSize: 26, fontWeight: '700' },
+
+  /* compact stats row right under top area */
+  statsRow: {
     marginTop: 8,
-    marginBottom: 6,
-    borderRadius: 10,
-    minHeight: 80,
-    maxHeight: 120,
-    justifyContent: 'center',
-  },
-  difficulty: {
-    color: '#4a90e2',
-    fontSize: 10,
-    fontWeight: 'bold',
-    marginBottom: 6,
-    textTransform: 'uppercase',
-  },
-  questionText: {
-    color: '#fff',
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '500',
-  },
-  answersContainer: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingTop: 4,
-    paddingBottom: 8,
-  },
-  answerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#19376d',
-    paddingVertical: 10,
+    marginHorizontal: 12,
+    backgroundColor: 'rgba(25,55,109,0.85)',
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
-    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  statText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  urgentTime: { color: '#ff4444' },
+
+  /* Question text (no container) */
+  questionText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+    marginHorizontal: 18,
+    fontWeight: '600',
+  },
+
+  /* Answers grid (2x2) */
+  answersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginHorizontal: 12,
+    marginTop: 8,
+    paddingHorizontal: 6,
+  },
+  answerButton: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(25,55,109,0.9)',
+    borderRadius: 12,
+    marginVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderWidth: 2,
     borderColor: '#19376d',
-    minHeight: 48,
+    minHeight: 56,
   },
   selectedAnswer: {
     borderColor: '#4a90e2',
     backgroundColor: '#1a3d5c',
   },
-  correctAnswer: {
-    borderColor: '#4caf50',
-    backgroundColor: '#1b5e20',
-  },
-  wrongAnswer: {
-    borderColor: '#f44336',
-    backgroundColor: '#5e1b1b',
-  },
   answerLetter: {
     color: '#4a90e2',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '700',
     marginRight: 8,
-    width: 20,
   },
   answerText: {
     color: '#fff',
     fontSize: 14,
-    flex: 1,
-    flexWrap: 'wrap',
-    lineHeight: 18,
+    flexShrink: 1,
   },
-  selectedAnswerText: {
-    fontWeight: 'bold',
+  selectedAnswerText: { fontWeight: '700' },
+
+  /* Sprites area under answers */
+  battleAreaBelowAnswers: {
+    marginHorizontal: 18,
+    marginTop: 6,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 120,
   },
+  player: {
+    width: 110,
+    height: 110,
+    resizeMode: 'contain',
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0)', // keep transparent
+  },
+  placeholderPlayer: {
+    width: 110,
+    height: 110,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  enemy: {
+    width: 110,
+    height: 110,
+    resizeMode: 'contain',
+  },
+
+  /* Submit button */
   submitButton: {
     backgroundColor: '#4a90e2',
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginHorizontal: 12,
-    marginTop: 6,
-    marginBottom: 10,
-    borderRadius: 10,
+    marginHorizontal: 18,
+    borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    marginBottom: 14,
   },
   submitButtonDisabled: {
-    backgroundColor: '#2c5f8d',
-    opacity: 0.5,
+    opacity: 0.55,
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 15,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 
 export default RunGameplay;
-
