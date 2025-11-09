@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { API_BASE_URL } from '../config/config';
 import AuthUtils from '../services/authUtils';
-import { RunService } from '../services';
+import { RunService, CacheService } from '../services';
 import styles from '../styles/Styles';
 
 function DailyChallenge({ navigation }) {
   const [challenge, setChallenge] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState('');
+  const [loadedFromCache, setLoadedFromCache] = useState(false);
 
   useEffect(() => {
     loadDailyChallenge();
@@ -24,27 +25,70 @@ function DailyChallenge({ navigation }) {
     }
   }, [challenge]);
 
-  const loadDailyChallenge = async () => {
+  const loadDailyChallenge = async (forceRefresh = false) => {
     try {
       setIsLoading(true);
-      const token = await AuthUtils.getAccessToken();
       
-      const response = await fetch(`${API_BASE_URL}/v1/content/daily`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load daily challenge');
+      // Try cache first (unless force refresh)
+      if (!forceRefresh) {
+        const cached = await CacheService.get('cache_daily_challenge', 60 * 60 * 1000); // 1 hour TTL
+        if (cached) {
+          console.log('[DailyChallenge] Using cached daily challenge');
+          setChallenge(cached);
+          setLoadedFromCache(true);
+          setIsLoading(false);
+          return;
+        }
       }
+      
+      console.log('[DailyChallenge] Fetching daily challenge from backend');
+      const data = await AuthUtils.authenticatedRequest(async (token) => {
+        const response = await fetch(`${API_BASE_URL}/v1/content/daily`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-      const data = await response.json();
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('401 Unauthorized');
+          }
+          throw new Error('Failed to load daily challenge');
+        }
+
+        return await response.json();
+      });
+      
+      // Cache the daily challenge
+      await CacheService.set('cache_daily_challenge', data);
+      console.log('[DailyChallenge] Daily challenge fetched and cached');
+      
       setChallenge(data);
+      setLoadedFromCache(false);
     } catch (error) {
-      console.error('Failed to load daily challenge:', error);
-      Alert.alert('Error', 'Failed to load daily challenge. Please try again.');
+      console.error('[DailyChallenge] Failed to load daily challenge:', error);
+      
+      if (error.message.includes('401') || error.message.includes('Authentication failed')) {
+        Alert.alert(
+          'Session Expired',
+          'Your session has expired. Please log in again.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                AuthUtils.clearAuthData();
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Auth' }],
+                });
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to load daily challenge. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +103,9 @@ function DailyChallenge({ navigation }) {
     
     if (diff <= 0) {
       setTimeRemaining('Expired - Refreshing...');
-      loadDailyChallenge(); // Reload to get new challenge
+      // Invalidate cache and force refresh
+      CacheService.invalidate('cache_daily_challenge');
+      loadDailyChallenge(true); // Force refresh to get new challenge
       return;
     }
     
@@ -81,22 +127,26 @@ function DailyChallenge({ navigation }) {
       });
       
       // Get questions for the daily challenge
-      const token = await AuthUtils.getAccessToken();
-      const questionsResponse = await fetch(
-        `${API_BASE_URL}/v1/content/daily/${challenge.id}/questions`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+      const questionsData = await AuthUtils.authenticatedRequest(async (token) => {
+        const questionsResponse = await fetch(
+          `${API_BASE_URL}/v1/content/daily/${challenge.id}/questions`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        
+        if (!questionsResponse.ok) {
+          if (questionsResponse.status === 401) {
+            throw new Error('401 Unauthorized');
+          }
+          throw new Error('Failed to get challenge questions');
         }
-      );
-      
-      if (!questionsResponse.ok) {
-        throw new Error('Failed to get challenge questions');
-      }
-      
-      const questionsData = await questionsResponse.json();
+        
+        return await questionsResponse.json();
+      });
       
       // Navigate to gameplay with daily challenge modifiers
       navigation.navigate('RunGameplay', {
@@ -110,7 +160,27 @@ function DailyChallenge({ navigation }) {
       });
     } catch (error) {
       console.error('Failed to start daily challenge:', error);
-      Alert.alert('Error', 'Failed to start daily challenge. Please try again.');
+      
+      if (error.message.includes('401') || error.message.includes('Authentication failed')) {
+        Alert.alert(
+          'Session Expired',
+          'Your session has expired. Please log in again.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                AuthUtils.clearAuthData();
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Auth' }],
+                });
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to start daily challenge. Please try again.');
+      }
     }
   };
 
@@ -150,6 +220,9 @@ function DailyChallenge({ navigation }) {
         <Text style={dailyStyles.title}>🏆 DAILY CHALLENGE 🏆</Text>
         <Text style={dailyStyles.theme}>{theme}</Text>
         <Text style={dailyStyles.timer}>⏰ {timeRemaining} remaining</Text>
+        {loadedFromCache && (
+          <Text style={dailyStyles.cacheIndicator}>⚡ Instant Load</Text>
+        )}
       </View>
 
       <View style={dailyStyles.descriptionCard}>
@@ -216,6 +289,12 @@ const dailyStyles = StyleSheet.create({
     fontSize: 16,
     color: '#a0c1d1',
     fontWeight: '600',
+  },
+  cacheIndicator: {
+    fontSize: 11,
+    color: '#4caf50',
+    marginTop: 5,
+    fontStyle: 'italic',
   },
   descriptionCard: {
     backgroundColor: '#19376d',
