@@ -151,31 +151,27 @@ class InventoryRepository:
         if not inventory_item or inventory_item.item.slot != slot:
             return None
 
-        # Unequip any currently equipped item in this slot
-        await self.session.execute(
-            update(Inventory)
+        # Get all equipped items in this slot and unequip them
+        # We need to use a SELECT to find them first, then UPDATE
+        currently_equipped = await self.session.execute(
+            select(Inventory)
+            .options(selectinload(Inventory.item))
             .where(
                 and_(
                     Inventory.user_id == user_id,
                     Inventory.equipped == True
                 )
             )
-            .join(Item)
-            .where(Item.slot == slot)
-            .values(equipped=False)
         )
+        
+        # Unequip items in the same slot
+        for inv in currently_equipped.scalars().all():
+            if inv.item.slot == slot:
+                inv.equipped = False
 
         # Equip the new item
-        await self.session.execute(
-            update(Inventory)
-            .where(
-                and_(
-                    Inventory.user_id == user_id,
-                    Inventory.item_id == item_id
-                )
-            )
-            .values(equipped=True)
-        )
+        inventory_item.equipped = True
+        await self.session.flush()
 
         return inventory_item.item
 

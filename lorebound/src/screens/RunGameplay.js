@@ -57,48 +57,42 @@ function RunGameplay({ navigation, route }) {
   const [scoresData, setScoresData] = useState([]);
 
   // Avatar state: store an Image source (either require(...) or { uri: '...' })
-  const [playerSpriteSource, setPlayerSpriteSource] = useState(null);
+  const [playerSpriteSource, setPlayerSpriteSource] = useState(RedKnight); // Default immediately
 
-  // Load avatar / color index from AsyncStorage (check characterData first)
+  // Load avatar / color index from cache first for instant display
   useEffect(() => {
     const loadAvatar = async () => {
       try {
-        // Try the key used by CharacterCustomization first
-        const charJson = await AsyncStorage.getItem('characterData');
-        if (charJson) {
-          const parsed = JSON.parse(charJson);
-          // CharacterCustomization saved colorIndex and equipment
-          if (typeof parsed.colorIndex === 'number') {
-            const sprites = [RedKnight, GreenKnight, BlueKnight];
-            const idx = Math.max(0, Math.min(parsed.colorIndex, sprites.length - 1));
+        const sprites = [RedKnight, GreenKnight, BlueKnight];
+        
+        // Try to load cached color first (instant!)
+        try {
+          const { ProfileService } = await import('../services');
+          const cachedColorIndex = await ProfileService.getCachedColorIndex();
+          
+          if (typeof cachedColorIndex === 'number') {
+            const idx = Math.max(0, Math.min(cachedColorIndex, sprites.length - 1));
             setPlayerSpriteSource(sprites[idx]);
+            console.log('[RunGameplay] Loaded knight color from cache (instant):', idx);
             return;
           }
-          // fallback to avatarUri field if present
-          if (parsed.avatarUri) {
-            setPlayerSpriteSource({ uri: parsed.avatarUri });
+          
+          // If no cache, load from backend (will cache for next time)
+          const profileData = await ProfileService.loadCharacterCustomization();
+          if (profileData && typeof profileData.colorIndex === 'number') {
+            const idx = Math.max(0, Math.min(profileData.colorIndex, sprites.length - 1));
+            setPlayerSpriteSource(sprites[idx]);
+            console.log('[RunGameplay] Loaded knight color from backend:', idx);
             return;
           }
+        } catch (profileError) {
+          console.warn('[RunGameplay] Could not load from profile:', profileError);
         }
 
-        // If not found, try legacy save key (saveData)
-        const saveJson = await AsyncStorage.getItem('saveData');
-        if (saveJson) {
-          const parsed = JSON.parse(saveJson);
-          if (parsed.avatarUri) {
-            setPlayerSpriteSource({ uri: parsed.avatarUri });
-            return;
-          }
-          if (parsed.avatar) {
-            // avatar might be a data URI or file path
-            setPlayerSpriteSource({ uri: parsed.avatar });
-            return;
-          }
-        }
-
-        // No avatar found: leave null (UI shows placeholder)
+        // Default to Red Knight (already set in state)
+        console.log('[RunGameplay] Using default knight color (Red)');
       } catch (err) {
-        console.warn('Error loading avatar from storage:', err);
+        console.warn('[RunGameplay] Error loading avatar:', err);
       }
     };
 
@@ -242,7 +236,14 @@ function RunGameplay({ navigation, route }) {
   const completeRun = async (finalTurnData, finalScoresData, isVictory = true, finalCorrectCount = correctCount) => {
     try {
       const signature = await RunService.calculateAggregateSignature(finalTurnData, runData.session_token);
-      const result = await RunService.submitRun(runData.id, finalTurnData, finalScoresData, signature);
+      const result = await RunService.submitRun(
+        runData.id, 
+        finalTurnData, 
+        finalScoresData, 
+        signature, 
+        isVictory,
+        isDailyChallenge
+      );
       const actualScore = result.total_score || score;
       navigation.replace('RunResults', {
         runData: result,

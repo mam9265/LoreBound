@@ -44,6 +44,7 @@ services:
       - RELOAD=false
     volumes:
       - ./app:/app/app
+      - ./scripts:/app/scripts
       - ./secrets:/app/secrets
     depends_on:
       db:

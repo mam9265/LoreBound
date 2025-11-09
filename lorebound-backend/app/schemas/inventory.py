@@ -1,7 +1,7 @@
 """Inventory and item schemas."""
 
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -108,7 +108,7 @@ class InventoryResponse(BaseModel):
 class EquipItemRequest(BaseModel):
     """Equip item request schema."""
     item_id: UUID = Field(..., description="Item identifier to equip")
-    slot: ItemSlot = Field(..., description="Equipment slot")
+    slot: Optional[ItemSlot] = Field(None, description="Equipment slot (optional, will be determined from item)")
 
     model_config = ConfigDict(
         json_schema_extra={

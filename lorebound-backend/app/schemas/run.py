@@ -82,6 +82,8 @@ class SubmitRunRequest(BaseModel):
     seed: int = Field(..., description="Run seed (must match start run)")
     turns: List[TurnData] = Field(..., description="Turn-by-turn data")
     client_signature: str = Field(..., description="Client-computed aggregate signature")
+    is_victory: bool = Field(default=True, description="Whether the player won/cleared the dungeon")
+    is_daily_challenge: bool = Field(default=False, description="Whether this was a daily challenge")
 
     model_config = ConfigDict(
         json_schema_extra={

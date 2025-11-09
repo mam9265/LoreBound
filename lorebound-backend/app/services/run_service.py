@@ -158,6 +158,33 @@ class RunService:
             # Update user progression if needed
             await self._update_user_progression(user_id, updated_run, session)
 
+            # Distribute item rewards for completing the run
+            from .inventory_service import InventoryService
+            inventory_service = InventoryService()
+            
+            is_daily = submit_data.is_daily_challenge
+            is_victory = submit_data.is_victory
+            
+            try:
+                rewards = await inventory_service.distribute_run_rewards(
+                    user_id=user_id,
+                    is_daily_challenge=is_daily,
+                    is_victory=is_victory,
+                    score=total_score,
+                    session=session
+                )
+                
+                # Add rewards to the run response summary
+                if updated_run.summary is None:
+                    updated_run.summary = {}
+                updated_run.summary["rewards"] = rewards
+                logger.info(f"Distributed {len(rewards)} rewards to user {user_id} for run {run_id}")
+            except Exception as e:
+                logger.error(f"Failed to distribute rewards for run {run_id}: {e}")
+                # Don't fail the run submission if rewards fail
+                updated_run.summary = updated_run.summary or {}
+                updated_run.summary["rewards"] = []
+
             logger.info(f"Run submitted successfully: {run_id} for user {user_id}")
             return RunResponse.model_validate(updated_run)
 

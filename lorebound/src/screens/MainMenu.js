@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ProfileService } from '../services';
 
 // Import the same sprites used in gameplay
 import RedKnight from '../assets/RedKnight.png';
@@ -8,40 +8,39 @@ import GreenKnight from '../assets/GreenKnight.png';
 import BlueKnight from '../assets/BlueKnight.png';
 
 function MainMenu({ navigation }) {
-  const [playerSprite, setPlayerSprite] = useState(null);
+  const [playerSprite, setPlayerSprite] = useState(RedKnight); // Default immediately
 
   useEffect(() => {
     const loadAvatar = async () => {
       try {
-        const charJson = await AsyncStorage.getItem('characterData');
-        if (charJson) {
-          const parsed = JSON.parse(charJson);
-          if (typeof parsed.colorIndex === 'number') {
-            const sprites = [RedKnight, GreenKnight, BlueKnight];
-            const idx = Math.max(0, Math.min(parsed.colorIndex, sprites.length - 1));
+        const sprites = [RedKnight, GreenKnight, BlueKnight];
+        
+        // Try to load cached color first (instant!)
+        const cachedColorIndex = await ProfileService.getCachedColorIndex();
+        if (typeof cachedColorIndex === 'number') {
+          const idx = Math.max(0, Math.min(cachedColorIndex, sprites.length - 1));
+          setPlayerSprite(sprites[idx]);
+          console.log('[MainMenu] Loaded knight color from cache (instant):', idx);
+          return;
+        }
+        
+        // If no cache, load from backend (will cache for next time)
+        try {
+          const profileData = await ProfileService.loadCharacterCustomization();
+          if (profileData && typeof profileData.colorIndex === 'number') {
+            const idx = Math.max(0, Math.min(profileData.colorIndex, sprites.length - 1));
             setPlayerSprite(sprites[idx]);
+            console.log('[MainMenu] Loaded knight color from backend:', idx);
             return;
           }
-          if (parsed.avatarUri) {
-            setPlayerSprite({ uri: parsed.avatarUri });
-            return;
-          }
+        } catch (profileError) {
+          console.warn('[MainMenu] Could not load from profile:', profileError);
         }
-
-        const saveJson = await AsyncStorage.getItem('saveData');
-        if (saveJson) {
-          const parsed = JSON.parse(saveJson);
-          if (parsed.avatarUri) {
-            setPlayerSprite({ uri: parsed.avatarUri });
-            return;
-          }
-          if (parsed.avatar) {
-            setPlayerSprite({ uri: parsed.avatar });
-            return;
-          }
-        }
+        
+        // Default to Red Knight (already set in state)
+        console.log('[MainMenu] Using default knight color (Red)');
       } catch (err) {
-        console.warn('Error loading avatar:', err);
+        console.warn('[MainMenu] Error loading avatar:', err);
       }
     };
 

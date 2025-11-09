@@ -12,6 +12,7 @@ from .auth_service import AuthenticationService
 from .apple_service import AppleSignInService
 from .content_service import ContentService
 from .run_service import RunService
+from .profile_service import ProfileService
 from .trivia_api_client import TriviaAPIClient, create_trivia_client
 
 
@@ -70,3 +71,11 @@ async def get_run_service_with_session(
     run_repo = RunRepository(session)
     run_service = RunService(run_repo, user_repo, settings)
     return run_service, session
+
+
+async def get_profile_service_with_session(
+    session: AsyncSession = Depends(get_session)
+) -> tuple[ProfileService, AsyncSession]:
+    """Get profile service with database session."""
+    profile_service = ProfileService()
+    return profile_service, session

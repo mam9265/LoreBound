@@ -79,9 +79,11 @@ class RunService {
    * @param {Array} turnData - Array of turn data objects
    * @param {Array} scores - Array of score data objects
    * @param {string} clientSignature - HMAC signature for anti-cheat
+   * @param {boolean} isVictory - Whether the player won/cleared the dungeon
+   * @param {boolean} isDailyChallenge - Whether this was a daily challenge
    * @returns {Promise<Object>} Completed run data
    */
-  async submitRun(runId, turnData, scores, clientSignature) {
+  async submitRun(runId, turnData, scores, clientSignature, isVictory = true, isDailyChallenge = false) {
     return await AuthUtils.authenticatedRequest(async (token) => {
       try {
         const response = await this.fetchWithTimeout(
@@ -96,6 +98,8 @@ class RunService {
               turn_data: turnData,
               scores: scores,
               client_signature: clientSignature,
+              is_victory: isVictory,
+              is_daily_challenge: isDailyChallenge,
             }),
           }
         );

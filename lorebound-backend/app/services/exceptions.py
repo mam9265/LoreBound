@@ -109,3 +109,18 @@ class LeaderboardError(ServiceError):
 class RankingCalculationError(LeaderboardError):
     """Raised when ranking calculation fails."""
     pass
+
+
+class ProfileError(ServiceError):
+    """Base exception for profile service errors."""
+    pass
+
+
+class ProfileNotFoundError(ProfileError):
+    """Raised when a user profile cannot be found."""
+    pass
+
+
+class HandleAlreadyExistsError(ProfileError):
+    """Raised when attempting to use a handle that's already taken."""
+    pass

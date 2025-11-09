@@ -33,14 +33,26 @@ function AuthScreen({ navigation }) {
     }
     setLoading(true);
     try {
+      console.log('[AUTH] Starting login...');
       const response = await ApiService.login(email, password);
+      console.log('[AUTH] Login response received');
+      
       await AsyncStorage.setItem('access_token', response.tokens.access_token);
       await AsyncStorage.setItem('refresh_token', response.tokens.refresh_token);
       await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
+      console.log('[AUTH] Tokens saved to storage');
+      
       Alert.alert('Success', 'Login successful!', [
-        { text: 'OK', onPress: () => navigation.navigate('MainMenu') },
+        { 
+          text: 'OK', 
+          onPress: () => {
+            console.log('[AUTH] Navigating to MainMenu...');
+            navigation.navigate('MainMenu');
+          } 
+        },
       ]);
     } catch (error) {
+      console.error('[AUTH] Login error:', error);
       Alert.alert('Login Failed', error.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);

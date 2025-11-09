@@ -82,6 +82,35 @@ function RunResults({ navigation, route }) {
           )}
         </View>
 
+        {/* Rewards Section - Only show if victory and rewards exist */}
+        {isVictory && runData?.summary?.rewards && runData.summary.rewards.length > 0 && (
+          <View style={resultStyles.rewardsSection}>
+            <Text style={resultStyles.rewardsTitle}>
+              🎁 Items Obtained! 🎁
+            </Text>
+            <Text style={resultStyles.rewardsSubtitle}>
+              You earned {runData.summary.rewards.length} new {runData.summary.rewards.length === 1 ? 'item' : 'items'}!
+            </Text>
+            <View style={resultStyles.rewardsGrid}>
+              {runData.summary.rewards.map((item, index) => (
+                <View key={index} style={[resultStyles.rewardCard, resultStyles[`rarity${item.rarity}`]]}>
+                  <Text style={resultStyles.rewardRarity}>
+                    {item.rarity.toUpperCase()}
+                  </Text>
+                  <Text style={resultStyles.rewardName}>{item.name}</Text>
+                  <Text style={resultStyles.rewardSlot}>
+                    {item.slot === 'helmet' && '🪖'}
+                    {item.slot === 'armor' && '🧥'}
+                    {item.slot === 'weapon' && '⚔️'}
+                    {item.slot === 'shield' && '🛡️'}
+                    {' '}{item.slot}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Stats Grid */}
         <View style={resultStyles.statsGrid}>
           <View style={resultStyles.statBox}>
@@ -404,6 +433,71 @@ const resultStyles = StyleSheet.create({
   tertiaryButtonText: {
     color: '#a0c1d1',
     fontSize: 16,
+  },
+  // Rewards section styles
+  rewardsSection: {
+    backgroundColor: '#19376d',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#ffd700',
+  },
+  rewardsTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffd700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  rewardsSubtitle: {
+    fontSize: 14,
+    color: '#a0c1d1',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  rewardsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    gap: 12,
+  },
+  rewardCard: {
+    width: '45%',
+    backgroundColor: '#0b2447',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  raritycommon: {
+    borderColor: '#9e9e9e',
+  },
+  rarityrare: {
+    borderColor: '#4a90e2',
+  },
+  rarityepic: {
+    borderColor: '#9c27b0',
+  },
+  raritylegendary: {
+    borderColor: '#ffd700',
+  },
+  rewardRarity: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  rewardName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  rewardSlot: {
+    fontSize: 12,
+    color: '#a0c1d1',
+    textAlign: 'center',
   },
 });
 

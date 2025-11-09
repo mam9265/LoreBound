@@ -92,6 +92,22 @@ class AuthenticationService:
                 handle=registration_data.handle
             )
 
+            # Give base items to new user
+            from ..repositories.inventory_repo import InventoryRepository
+            inventory_repo = InventoryRepository(session)
+            base_item_slugs = ["leather_cap", "travelers_tunic", "iron_sword", "wooden_shield"]
+            
+            for item_slug in base_item_slugs:
+                item = await inventory_repo.get_item_by_slug(item_slug)
+                if item:
+                    # Add to inventory, equip the base items
+                    await inventory_repo.add_item_to_inventory(
+                        user_id=user.id,
+                        item_id=item.id,
+                        equipped=True
+                    )
+                    logger.info(f"Added base item '{item.name}' to new user {user.id}")
+
             # Update last login
             await self.user_repo.update_user_login_time(user.id)
 
