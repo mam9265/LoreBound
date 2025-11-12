@@ -162,8 +162,9 @@ class RunService:
             from .inventory_service import InventoryService
             inventory_service = InventoryService()
             
-            is_daily = submit_data.is_daily_challenge
-            is_victory = submit_data.is_victory
+            # Use getattr with defaults for backward compatibility
+            is_daily = getattr(submit_data, 'is_daily_challenge', False)
+            is_victory = getattr(submit_data, 'is_victory', True)
             
             try:
                 rewards = await inventory_service.distribute_run_rewards(
