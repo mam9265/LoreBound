@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import styles from '../styles/Styles';
 import { ContentService } from '../services';
 
@@ -32,7 +32,6 @@ function DungeonSelect({ navigation }) {
   };
 
   const handleDungeonPress = (dungeon) => {
-    // Navigate to RunGameplay with dungeon data
     navigation.navigate('RunGameplay', {
       dungeonId: dungeon.id,
       dungeonName: dungeon.title,
@@ -50,37 +49,80 @@ function DungeonSelect({ navigation }) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <Text style={styles.title}>Dungeon Select</Text>
-      <View style={styles.grid}>
+    <View style={[styles.container, { padding: 10 }]}>
+
+      {/* 🔙 Back Button + Title Row */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          marginBottom: 10,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.navigate("MainMenu")}
+          style={{
+            backgroundColor: "#19376d",
+            paddingVertical: 6,
+            paddingHorizontal: 14,
+            borderRadius: 10,
+            marginRight: 10
+          }}
+        >
+          <Text style={{ color: "white", fontSize: 16 }}>Back</Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.title, { flex: 1, textAlign: "center" }]}>
+          Dungeon Select
+        </Text>
+      </View>
+
+      {/* Grid that fits all buttons on screen */}
+      <View
+        style={{
+          flex: 1,
+          flexDirection: "row",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          alignContent: "flex-start",
+          paddingTop: 5
+        }}
+      >
         {dungeons.map((dungeon) => (
           <TouchableOpacity
             key={dungeon.id}
-            style={styles.dungeonButton}
+            style={{
+              width: "47%",            
+              height: "50%",
+              backgroundColor: "#0b2b5c",
+              borderRadius: 20,
+              padding: 12,
+              marginBottom: 16,        
+              justifyContent: "center",
+              alignItems: "center",
+            }}
             onPress={() => handleDungeonPress(dungeon)}
           >
-            <Text style={{ fontSize: 36, marginBottom: 8 }}>
+            <Text style={{ fontSize: 28, marginBottom: 4 }}>
               {ContentService.getCategoryIcon(dungeon.category)}
             </Text>
-            <Text style={styles.dungeonTitle} numberOfLines={2} ellipsizeMode="tail">
+
+            <Text style={[styles.dungeonTitle, { fontSize: 16 }]} numberOfLines={2}>
               {dungeon.title}
             </Text>
-            <Text style={styles.dungeonFloors}>
+
+            <Text style={[styles.dungeonFloors, { fontSize: 14 }]}>
               {ContentService.getCategoryDisplayName(dungeon.category)}
             </Text>
-            <Text style={styles.dungeonFloors}>
+
+            <Text style={[styles.dungeonFloors, { fontSize: 14 }]}>
               {dungeon.tiers?.length || 0} Tiers
             </Text>
           </TouchableOpacity>
         ))}
-        <TouchableOpacity
-          style={[styles.smallButton, { flex: 1}]}
-          onPress={() => navigation.navigate('MainMenu')}
-        >
-          <Text style={styles.dungeonFloors}>Back to Home</Text>
-        </TouchableOpacity>
       </View>
-    </ScrollView>
+
+    </View>
   );
 }
 
