@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Button, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Button, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from '../styles/Styles';
 import { ProfileService, InventoryService } from '../services';
@@ -10,6 +10,7 @@ function CharacterCustomization({ navigation }) {
   const [colorIndex, setColorIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const knightSprites = [
     require('../assets/RedKnight.png'),   // Red
@@ -36,7 +37,7 @@ function CharacterCustomization({ navigation }) {
       setEquippedItems(updatedInventory.equipped_items);
       
       console.log(`[CharacterCustomization] ${itemName} equipped successfully`);
-      Alert.alert('Success!', `${itemName} is now equipped!`);
+      // Don't show alert in modal, just update silently
     } catch (error) {
       console.error('[CharacterCustomization] Error equipping item:', error);
       console.error('[CharacterCustomization] Error details:', error.message);
@@ -44,6 +45,11 @@ function CharacterCustomization({ navigation }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveAndClose = () => {
+    setModalVisible(false);
+    Alert.alert('Saved!', 'Your equipment has been saved!');
   };
 
   const saveColorChoice = async () => {
@@ -240,12 +246,15 @@ function CharacterCustomization({ navigation }) {
 
         {/* Character Preview */}
         <View style={styles.previewContainer}>
-          <Image
-            source={knightSprites[colorIndex]}
-            style={styles.characterImage}
-            resizeMode="contain"
-          />
+          <TouchableOpacity onPress={() => setModalVisible(true)} activeOpacity={0.8}>
+            <Image
+              source={knightSprites[colorIndex]}
+              style={styles.characterImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
           <Text style={styles.previewText}>{colorNames[colorIndex]} Knight</Text>
+          <Text style={[styles.previewText, { fontSize: 12, fontStyle: 'italic', marginTop: 4 }]}>Tap knight to equip items</Text>
           
           {/* Show equipped items */}
           <Text style={styles.equipmentText}>🪖 {equippedItems.helmet?.name || 'No Helmet'}</Text>
@@ -278,12 +287,6 @@ function CharacterCustomization({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Equipment Slots */}
-        {renderItemSlot('Helmets', 'helmet', '🪖')}
-        {renderItemSlot('Armor', 'armor', '🧥')}
-        {renderItemSlot('Weapons', 'weapon', '⚔️')}
-        {renderItemSlot('Shields', 'shield', '🛡️')}
-
         <TouchableOpacity
           style={[styles.playButton, { backgroundColor: '#19376d', marginTop: 20 }]}
           onPress={() => navigation.goBack()}
@@ -291,6 +294,54 @@ function CharacterCustomization({ navigation }) {
           <Text style={styles.playText}>BACK</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Equipment Modal */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={customStyles.modalOverlay}>
+          <View style={customStyles.modalContainer}>
+            <View style={customStyles.modalHeader}>
+              <Text style={customStyles.modalTitle}>Equip Items</Text>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={customStyles.closeButton}
+              >
+                <Text style={customStyles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              style={customStyles.modalContent}
+              contentContainerStyle={customStyles.modalScrollContent}
+            >
+              {renderItemSlot('Helmets', 'helmet', '🪖')}
+              {renderItemSlot('Armor', 'armor', '🧥')}
+              {renderItemSlot('Weapons', 'weapon', '⚔️')}
+              {renderItemSlot('Shields', 'shield', '🛡️')}
+            </ScrollView>
+
+            <View style={customStyles.modalFooter}>
+              <TouchableOpacity
+                style={[customStyles.saveButton, saving && { opacity: 0.6 }]}
+                onPress={handleSaveAndClose}
+                disabled={saving}
+              >
+                <Text style={customStyles.saveButtonText}>Save & Close</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={customStyles.cancelButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={customStyles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -399,6 +450,96 @@ const customStyles = StyleSheet.create({
   saveColorText: {
     color: '#fff',
     fontSize: 14,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '90%',
+    maxWidth: 500,
+    maxHeight: '85%',
+    backgroundColor: '#0b2447',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#19376d',
+    borderBottomWidth: 2,
+    borderBottomColor: '#4a90e2',
+  },
+  modalTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#4a90e2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    padding: 16,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#19376d',
+    borderTopWidth: 2,
+    borderTopColor: '#4a90e2',
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#4a90e2',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#666',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
