@@ -13,8 +13,7 @@ function DailyChallenge({ navigation }) {
 
   useEffect(() => {
     loadDailyChallenge();
-    
-    // Update time remaining every minute
+
     const interval = setInterval(updateTimeRemaining, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -28,20 +27,17 @@ function DailyChallenge({ navigation }) {
   const loadDailyChallenge = async (forceRefresh = false) => {
     try {
       setIsLoading(true);
-      
-      // Try cache first (unless force refresh)
+
       if (!forceRefresh) {
-        const cached = await CacheService.get('cache_daily_challenge', 60 * 60 * 1000); // 1 hour TTL
+        const cached = await CacheService.get('cache_daily_challenge', 60 * 60 * 1000);
         if (cached) {
-          console.log('[DailyChallenge] Using cached daily challenge');
           setChallenge(cached);
           setLoadedFromCache(true);
           setIsLoading(false);
           return;
         }
       }
-      
-      console.log('[DailyChallenge] Fetching daily challenge from backend');
+
       const data = await AuthUtils.authenticatedRequest(async (token) => {
         const response = await fetch(`${API_BASE_URL}/v1/content/daily`, {
           headers: {
@@ -51,43 +47,36 @@ function DailyChallenge({ navigation }) {
         });
 
         if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error('401 Unauthorized');
-          }
+          if (response.status === 401) throw new Error('401 Unauthorized');
           throw new Error('Failed to load daily challenge');
         }
 
         return await response.json();
       });
-      
-      // Cache the daily challenge
+
       await CacheService.set('cache_daily_challenge', data);
-      console.log('[DailyChallenge] Daily challenge fetched and cached');
-      
+
       setChallenge(data);
       setLoadedFromCache(false);
     } catch (error) {
-      console.error('[DailyChallenge] Failed to load daily challenge:', error);
-      
-      if (error.message.includes('401') || error.message.includes('Authentication failed')) {
+      console.error('[DailyChallenge] Error:', error);
+
+      if (error.message.includes('401')) {
         Alert.alert(
           'Session Expired',
-          'Your session has expired. Please log in again.',
+          'Please log in again.',
           [
             {
               text: 'OK',
               onPress: () => {
                 AuthUtils.clearAuthData();
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Auth' }],
-                });
+                navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
               },
             },
           ]
         );
       } else {
-        Alert.alert('Error', 'Failed to load daily challenge. Please try again.');
+        Alert.alert('Error', 'Failed to load daily challenge. Try again.');
       }
     } finally {
       setIsLoading(false);
@@ -96,19 +85,18 @@ function DailyChallenge({ navigation }) {
 
   const updateTimeRemaining = () => {
     if (!challenge?.expires_at) return;
-    
+
     const now = new Date();
     const expires = new Date(challenge.expires_at);
     const diff = expires - now;
-    
+
     if (diff <= 0) {
       setTimeRemaining('Expired - Refreshing...');
-      // Invalidate cache and force refresh
       CacheService.invalidate('cache_daily_challenge');
-      loadDailyChallenge(true); // Force refresh to get new challenge
+      loadDailyChallenge(true);
       return;
     }
-    
+
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     setTimeRemaining(`${hours}h ${minutes}m`);
@@ -116,19 +104,17 @@ function DailyChallenge({ navigation }) {
 
   const handlePlayChallenge = async () => {
     if (!challenge || !challenge.dungeon) return;
-    
+
     try {
-      // Start a run for the daily challenge dungeon
       const run = await RunService.startRun(challenge.dungeon.id, 1, {
         device: 'mobile',
         version: '1.0.0',
         is_daily_challenge: true,
         challenge_id: challenge.id,
       });
-      
-      // Get questions for the daily challenge
+
       const questionsData = await AuthUtils.authenticatedRequest(async (token) => {
-        const questionsResponse = await fetch(
+        const res = await fetch(
           `${API_BASE_URL}/v1/content/daily/${challenge.id}/questions`,
           {
             headers: {
@@ -137,18 +123,15 @@ function DailyChallenge({ navigation }) {
             },
           }
         );
-        
-        if (!questionsResponse.ok) {
-          if (questionsResponse.status === 401) {
-            throw new Error('401 Unauthorized');
-          }
+
+        if (!res.ok) {
+          if (res.status === 401) throw new Error('401 Unauthorized');
           throw new Error('Failed to get challenge questions');
         }
-        
-        return await questionsResponse.json();
+
+        return await res.json();
       });
-      
-      // Navigate to gameplay with daily challenge modifiers
+
       navigation.navigate('RunGameplay', {
         dungeonId: challenge.dungeon.id,
         dungeonName: challenge.modifiers?.theme || 'Daily Challenge',
@@ -159,27 +142,24 @@ function DailyChallenge({ navigation }) {
         challengeModifiers: challenge.modifiers,
       });
     } catch (error) {
-      console.error('Failed to start daily challenge:', error);
-      
-      if (error.message.includes('401') || error.message.includes('Authentication failed')) {
+      console.error('Failed to start challenge:', error);
+
+      if (error.message.includes('401')) {
         Alert.alert(
           'Session Expired',
-          'Your session has expired. Please log in again.',
+          'Please log in again.',
           [
             {
               text: 'OK',
               onPress: () => {
                 AuthUtils.clearAuthData();
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Auth' }],
-                });
+                navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
               },
             },
           ]
         );
       } else {
-        Alert.alert('Error', 'Failed to start daily challenge. Please try again.');
+        Alert.alert('Error', 'Failed to start. Try again.');
       }
     }
   };
@@ -188,7 +168,7 @@ function DailyChallenge({ navigation }) {
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}>
         <ActivityIndicator size="large" color="#19376d" />
-        <Text style={[styles.headerText, { marginTop: 20 }]}>
+        <Text style={{ marginTop: 20, fontSize: 18, fontWeight: 'bold', color: '#19376d' }}>
           Loading Daily Challenge...
         </Text>
       </View>
@@ -198,12 +178,12 @@ function DailyChallenge({ navigation }) {
   if (!challenge) {
     return (
       <View style={styles.container}>
-        <Text style={styles.headerText}>No challenge available</Text>
+        <Text style={{ fontSize: 22, marginBottom: 20 }}>No challenge available</Text>
         <TouchableOpacity
-          style={[styles.playButton, { backgroundColor: '#19376d' }]}
+          style={[dailyStyles.playButton, { backgroundColor: '#19376d' }]}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.playText}>BACK</Text>
+          <Text style={dailyStyles.playButtonText}>BACK</Text>
         </TouchableOpacity>
       </View>
     );
@@ -215,21 +195,22 @@ function DailyChallenge({ navigation }) {
   const description = challenge.modifiers?.description || 'Complete today\'s challenge!';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: 10 }]}>
+      {/* Header */}
       <View style={dailyStyles.headerCard}>
         <Text style={dailyStyles.title}>🏆 DAILY CHALLENGE 🏆</Text>
         <Text style={dailyStyles.theme}>{theme}</Text>
         <Text style={dailyStyles.timer}>⏰ {timeRemaining} remaining</Text>
-        {loadedFromCache && (
-          <Text style={dailyStyles.cacheIndicator}>⚡ Instant Load</Text>
-        )}
+        {loadedFromCache && <Text style={dailyStyles.cacheIndicator}>⚡ Instant Load</Text>}
       </View>
 
+      {/* Description */}
       <View style={dailyStyles.descriptionCard}>
         <Text style={dailyStyles.difficultyBadge}>HARD MODE</Text>
         <Text style={dailyStyles.description}>{description}</Text>
       </View>
 
+      {/* Bonus */}
       <View style={dailyStyles.bonusCard}>
         <Text style={dailyStyles.bonusTitle}>BONUS REWARDS</Text>
         <View style={dailyStyles.bonusRow}>
@@ -244,17 +225,12 @@ function DailyChallenge({ navigation }) {
         </View>
       </View>
 
-      <TouchableOpacity 
-        style={dailyStyles.playButton}
-        onPress={handlePlayChallenge}
-      >
+      {/* CTA */}
+      <TouchableOpacity style={dailyStyles.playButton} onPress={handlePlayChallenge}>
         <Text style={dailyStyles.playButtonText}>START CHALLENGE</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={dailyStyles.backButton}
-        onPress={() => navigation.goBack()}
-      >
+      <TouchableOpacity style={dailyStyles.backButton} onPress={() => navigation.goBack()}>
         <Text style={dailyStyles.backButtonText}>BACK</Text>
       </TouchableOpacity>
     </View>
@@ -264,75 +240,75 @@ function DailyChallenge({ navigation }) {
 const dailyStyles = StyleSheet.create({
   headerCard: {
     backgroundColor: '#19376d',
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 20,
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#ffd700',
   },
   title: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#ffd700',
-    marginBottom: 10,
+    marginBottom: 6,
     textAlign: 'center',
   },
   theme: {
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 5,
+    marginBottom: 4,
     textAlign: 'center',
   },
   timer: {
-    fontSize: 16,
+    fontSize: 13,
     color: '#a0c1d1',
     fontWeight: '600',
   },
   cacheIndicator: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#4caf50',
-    marginTop: 5,
+    marginTop: 4,
     fontStyle: 'italic',
   },
   descriptionCard: {
     backgroundColor: '#19376d',
-    padding: 15,
+    padding: 12,
     borderRadius: 10,
-    marginBottom: 20,
+    marginBottom: 15,
     alignItems: 'center',
   },
   difficultyBadge: {
     backgroundColor: '#ff4444',
     color: '#fff',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    borderRadius: 15,
-    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 6,
   },
   description: {
-    fontSize: 16,
+    fontSize: 13,
     color: '#a0c1d1',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 18,
   },
   bonusCard: {
     backgroundColor: '#19376d',
-    padding: 20,
+    padding: 14,
     borderRadius: 10,
-    marginBottom: 30,
+    marginBottom: 20,
     borderWidth: 2,
     borderColor: '#4caf50',
   },
   bonusTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: 'bold',
     color: '#4caf50',
     textAlign: 'center',
-    marginBottom: 15,
+    marginBottom: 10,
   },
   bonusRow: {
     flexDirection: 'row',
@@ -342,42 +318,38 @@ const dailyStyles = StyleSheet.create({
     alignItems: 'center',
   },
   bonusValue: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#ffd700',
-    marginBottom: 5,
+    marginBottom: 3,
   },
   bonusLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#a0c1d1',
     fontWeight: '600',
   },
   playButton: {
     backgroundColor: '#ffd700',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
     borderRadius: 10,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
+    marginBottom: 10,
+    elevation: 6,
   },
   playButtonText: {
     color: '#0b2447',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
   },
   backButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
+    backgroundColor: '#0b2447',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
   },
   backButtonText: {
     color: '#a0c1d1',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     textAlign: 'center',
   },

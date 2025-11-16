@@ -50,7 +50,7 @@ function DungeonSelect({ navigation }) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.title}>Dungeon Select</Text>
       <View style={styles.grid}>
         {dungeons.map((dungeon) => (
@@ -74,7 +74,7 @@ function DungeonSelect({ navigation }) {
           </TouchableOpacity>
         ))}
         <TouchableOpacity
-          style={styles.smallButton}
+          style={[styles.smallButton, { flex: 1}]}
           onPress={() => navigation.navigate('MainMenu')}
         >
           <Text style={styles.dungeonFloors}>Back to Home</Text>
