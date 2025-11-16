@@ -56,6 +56,11 @@ function RunGameplay({ navigation, route }) {
   const [turnData, setTurnData] = useState([]);
   const [scoresData, setScoresData] = useState([]);
 
+  // Item bonuses from equipped gear
+  const [itemBonuses, setItemBonuses] = useState({});
+  const [equippedItems, setEquippedItems] = useState([]);
+  const [questionTimeLimit, setQuestionTimeLimit] = useState(QUESTION_TIME_LIMIT);
+
   // Avatar state: store an Image source (either require(...) or { uri: '...' })
   const [playerSpriteSource, setPlayerSpriteSource] = useState(RedKnight); // Default immediately
 
@@ -100,7 +105,7 @@ function RunGameplay({ navigation, route }) {
     initializeRun();
   }, []);
 
-  // Init run (kept identical logic)
+  // Init run with item bonuses
   const initializeRun = async () => {
     if (preLoadedRunData && preLoadedQuestions && preLoadedQuestions.length > 0) {
       setIsLoading(false);
@@ -113,10 +118,33 @@ function RunGameplay({ navigation, route }) {
         version: '1.0.0',
         is_daily_challenge: isDailyChallenge,
       });
-      setRunData(run);
+      
+      // Normalize response - new API returns run_id instead of id
+      const normalizedRun = {
+        ...run,
+        id: run.run_id || run.id, // Support both old and new format
+      };
+      setRunData(normalizedRun);
+
+      // Store item bonuses from equipped gear
+      if (run.total_bonuses) {
+        setItemBonuses(run.total_bonuses);
+        console.log('[RunGameplay] Item bonuses active:', run.total_bonuses);
+      }
+      if (run.equipped_items) {
+        setEquippedItems(run.equipped_items);
+        console.log('[RunGameplay] Equipped items:', run.equipped_items.length);
+      }
+
+      // Calculate time limit with item time_extension bonus
+      const timeExtension = run.total_bonuses?.time_extension || 0;
+      const totalTime = QUESTION_TIME_LIMIT + timeExtension;
+      setQuestionTimeLimit(totalTime);
+      setTimer(totalTime);
+      console.log('[RunGameplay] Time per question:', totalTime, 'seconds (base + bonus)');
 
       const questionsData = await RunService.getQuestionsForRun(
-        dungeonId,
+        run.dungeon_id || dungeonId,
         run.seed,
         10,
         1
@@ -170,12 +198,20 @@ function RunGameplay({ navigation, route }) {
     let points = 0;
     let timeBonus = 0;
     let streakBonus = 0;
+    let itemBonus = 0;
 
     if (isCorrect) {
       const basePoints = { easy: 100, medium: 150, hard: 200 }[question.difficulty] || 100;
-      timeBonus = Math.floor(basePoints * 0.5 * (timer / QUESTION_TIME_LIMIT));
+      timeBonus = Math.floor(basePoints * 0.5 * (timer / questionTimeLimit));
       streakBonus = Math.floor(basePoints * Math.min(streak * 0.1, 1.0));
       points = basePoints + timeBonus + streakBonus;
+
+      // Apply item score multiplier bonus
+      const scoreMultiplier = itemBonuses.score_multiplier || 1.0;
+      if (scoreMultiplier > 1.0) {
+        itemBonus = Math.floor(points * (scoreMultiplier - 1.0));
+        points = Math.floor(points * scoreMultiplier);
+      }
 
       if (isDailyChallenge && challengeModifiers.points_multiplier) {
         points = Math.floor(points * challengeModifiers.points_multiplier);
@@ -209,6 +245,7 @@ function RunGameplay({ navigation, route }) {
       is_correct: isCorrect,
       streak_bonus: streakBonus,
       time_bonus: timeBonus,
+      item_bonus: itemBonus,
     };
 
     const newTurnData = [...turnData, turn];
@@ -227,7 +264,7 @@ function RunGameplay({ navigation, route }) {
       setTimeout(() => {
         setCurrentQuestionIndex((p) => p + 1);
         setSelectedAnswer(null);
-        setTimer(QUESTION_TIME_LIMIT);
+        setTimer(questionTimeLimit); // Reset to extended time if items equipped
         setIsSubmitting(false);
       }, 900);
     }
@@ -235,7 +272,16 @@ function RunGameplay({ navigation, route }) {
 
   const completeRun = async (finalTurnData, finalScoresData, isVictory = true, finalCorrectCount = correctCount) => {
     try {
+      console.log('[RunGameplay] Completing run...', {
+        turnCount: finalTurnData.length,
+        scoresCount: finalScoresData.length,
+        isVictory,
+        finalScore: score
+      });
+
       const signature = await RunService.calculateAggregateSignature(finalTurnData, runData.session_token);
+      
+      console.log('[RunGameplay] Submitting to backend...');
       const result = await RunService.submitRun(
         runData.id, 
         finalTurnData, 
@@ -244,7 +290,10 @@ function RunGameplay({ navigation, route }) {
         isVictory,
         isDailyChallenge
       );
+      
+      console.log('[RunGameplay] Submit successful, navigating to results...');
       const actualScore = result.total_score || score;
+      
       navigation.replace('RunResults', {
         runData: result,
         score: actualScore,
@@ -257,9 +306,17 @@ function RunGameplay({ navigation, route }) {
         isDailyChallenge,
         challengeModifiers,
       });
+      
+      console.log('[RunGameplay] Navigation complete');
     } catch (error) {
-      console.error('Submit run failed:', error);
-      Alert.alert('Error', 'Failed to submit run results.', [
+      console.error('[RunGameplay] Complete run error:', {
+        message: error.message,
+        stack: error.stack,
+        error: error
+      });
+      
+      const errorMsg = error.message || 'Failed to submit run results';
+      Alert.alert('Error', errorMsg, [
         { text: 'Try Again', onPress: () => completeRun(finalTurnData, finalScoresData, isVictory, finalCorrectCount) },
         { text: 'Cancel', onPress: () => navigation.goBack() },
       ]);
@@ -317,6 +374,21 @@ function RunGameplay({ navigation, route }) {
         <Text style={gameStyles.statText}>💯 {score}</Text>
         <Text style={[gameStyles.statText, timer <= 5 && gameStyles.urgentTime]}>{timer}s</Text>
       </View>
+
+      {/* Item bonuses display */}
+      {(itemBonuses.score_multiplier > 1.0 || itemBonuses.time_extension > 0 || itemBonuses.xp_bonus > 0) && (
+        <View style={gameStyles.bonusesRow}>
+          {itemBonuses.score_multiplier > 1.0 && (
+            <Text style={gameStyles.bonusText}>⚔️ +{Math.round((itemBonuses.score_multiplier - 1) * 100)}%</Text>
+          )}
+          {itemBonuses.time_extension > 0 && (
+            <Text style={gameStyles.bonusText}>⏱️ +{itemBonuses.time_extension}s</Text>
+          )}
+          {itemBonuses.xp_bonus > 0 && (
+            <Text style={gameStyles.bonusText}>✨ +{Math.round(itemBonuses.xp_bonus * 100)}% XP</Text>
+          )}
+        </View>
+      )}
 
       {/* question displayed directly (no blue container) */}
       <Text style={gameStyles.questionText}>{currentQuestion.prompt}</Text>
@@ -405,6 +477,20 @@ const gameStyles = StyleSheet.create({
   },
   statText: { color: '#fff', fontWeight: '600', fontSize: 14 },
   urgentTime: { color: '#ff4444' },
+
+  /* Item bonuses row */
+  bonusesRow: {
+    marginTop: 4,
+    marginHorizontal: 12,
+    backgroundColor: 'rgba(76, 175, 80, 0.75)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  bonusText: { color: '#fff', fontWeight: '600', fontSize: 13 },
 
   /* Question text (no container) */
   questionText: {

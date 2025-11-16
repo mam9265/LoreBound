@@ -562,13 +562,17 @@ class ContentService:
         dungeon = dungeons[0]
         
         # Store in database
+        # Handle both enum and string types for category/difficulty
+        category_value = category.value if hasattr(category, 'value') else str(category)
+        difficulty_value = difficulty.value if hasattr(difficulty, 'value') else str(difficulty)
+        
         return await self.content_repo.create_question(
             dungeon_id=dungeon.id,
             prompt=external_question.question,
             choices=all_choices,
             answer_index=correct_choice_index,
             difficulty=difficulty,
-            tags=[category.value, difficulty.value, "external_api"]
+            tags=[category_value, difficulty_value, "external_api"]
         )
 
     async def _generate_daily_challenge(

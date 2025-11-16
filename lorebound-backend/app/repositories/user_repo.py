@@ -1,5 +1,6 @@
 """User repository for database operations."""
 
+import logging
 from typing import Optional, List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +9,8 @@ from sqlalchemy.orm import selectinload
 
 from ..domain.models import User, Profile
 from ..domain.enums import UserStatus
+
+logger = logging.getLogger(__name__)
 
 
 class UserRepository:
@@ -81,6 +84,29 @@ class UserRepository:
             .values(status=status)
         )
         return result.rowcount > 0
+
+    async def add_experience(self, user_id: UUID, xp_amount: int, session: AsyncSession = None) -> bool:
+        """Add experience points to user's profile."""
+        # Get user's profile
+        result = await self.session.execute(
+            select(Profile).where(Profile.user_id == user_id)
+        )
+        profile = result.scalar_one_or_none()
+        
+        if not profile:
+            return False
+        
+        # Add XP and check for level up
+        profile.xp += xp_amount
+        
+        # Simple level up formula: Level = floor(XP / 1000) + 1
+        new_level = (profile.xp // 1000) + 1
+        if new_level > profile.level:
+            profile.level = new_level
+            logger.info(f"User {user_id} leveled up to {new_level}!")
+        
+        await self.session.flush()
+        return True
 
     async def create_profile(
         self,

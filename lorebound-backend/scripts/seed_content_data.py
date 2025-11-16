@@ -71,6 +71,58 @@ async def seed_dungeons():
                 {"floor": 1, "boss_meta": {"name": "Trend Setter", "description": "Pioneer of cultural movements"}},
                 {"floor": 2, "boss_meta": {"name": "Media Mogul", "description": "Controller of entertainment empires"}},
             ]
+        },
+        {
+            "title": "Library of Knowledge",
+            "category": DungeonCategory.BOOKS,
+            "modifiers": {
+                "description": "Explore the vast realm of literature and storytelling",
+                "difficulty": "medium",
+                "estimated_duration": "15-20 minutes"
+            },
+            "tiers": [
+                {"floor": 1, "boss_meta": {"name": "Bookworm Guardian", "description": "Protector of written wisdom"}},
+                {"floor": 2, "boss_meta": {"name": "Literary Master", "description": "Keeper of classic tales"}},
+            ]
+        },
+        {
+            "title": "Science Laboratory",
+            "category": DungeonCategory.SCIENCE,
+            "modifiers": {
+                "description": "Discover the mysteries of science and nature",
+                "difficulty": "hard",
+                "estimated_duration": "18-22 minutes"
+            },
+            "tiers": [
+                {"floor": 1, "boss_meta": {"name": "Lab Technician", "description": "Master of experiments"}},
+                {"floor": 2, "boss_meta": {"name": "Research Professor", "description": "Expert of scientific method"}},
+            ]
+        },
+        {
+            "title": "Geography Explorer",
+            "category": DungeonCategory.GEOGRAPHY,
+            "modifiers": {
+                "description": "Journey across the world's landscapes and cultures",
+                "difficulty": "medium",
+                "estimated_duration": "12-18 minutes"
+            },
+            "tiers": [
+                {"floor": 1, "boss_meta": {"name": "World Traveler", "description": "Explorer of distant lands"}},
+                {"floor": 2, "boss_meta": {"name": "Cartographer", "description": "Master mapmaker"}},
+            ]
+        },
+        {
+            "title": "General Knowledge Arena",
+            "category": DungeonCategory.GENERAL,
+            "modifiers": {
+                "description": "Test your knowledge across all subjects",
+                "difficulty": "medium",
+                "estimated_duration": "15-20 minutes"
+            },
+            "tiers": [
+                {"floor": 1, "boss_meta": {"name": "Quiz Master", "description": "Guardian of general trivia"}},
+                {"floor": 2, "boss_meta": {"name": "Knowledge Sage", "description": "Keeper of all wisdom"}},
+            ]
         }
     ]
     

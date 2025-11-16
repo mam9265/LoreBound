@@ -106,12 +106,15 @@ function DailyChallenge({ navigation }) {
     if (!challenge || !challenge.dungeon) return;
 
     try {
-      const run = await RunService.startRun(challenge.dungeon.id, 1, {
-        device: 'mobile',
-        version: '1.0.0',
-        is_daily_challenge: true,
-        challenge_id: challenge.id,
-      });
+      // Start daily challenge run with is_daily flag
+      const run = await RunService.startDailyChallengeRun(
+        challenge.dungeon.id,
+        {
+          device: 'mobile',
+          version: '1.0.0',
+          challenge_id: challenge.id,
+        }
+      );
 
       const questionsData = await AuthUtils.authenticatedRequest(async (token) => {
         const res = await fetch(
@@ -126,17 +129,24 @@ function DailyChallenge({ navigation }) {
 
         if (!res.ok) {
           if (res.status === 401) throw new Error('401 Unauthorized');
-          throw new Error('Failed to get challenge questions');
+          const errorData = await res.json();
+          throw new Error(errorData.detail || 'Failed to get challenge questions');
         }
 
         return await res.json();
       });
 
+      // Normalize run response
+      const normalizedRun = {
+        ...run,
+        id: run.run_id || run.id,
+      };
+
       navigation.navigate('RunGameplay', {
         dungeonId: challenge.dungeon.id,
         dungeonName: challenge.modifiers?.theme || 'Daily Challenge',
         dungeonCategory: challenge.dungeon.category || 'daily_challenge',
-        runData: run,
+        runData: normalizedRun,
         questions: questionsData.questions,
         isDailyChallenge: true,
         challengeModifiers: challenge.modifiers,

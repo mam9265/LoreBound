@@ -117,6 +117,9 @@ async def get_questions(
             run_seed=run_seed
         )
         
+        # Commit any newly fetched questions to database
+        await session.commit()
+        
         response = QuestionsResponse(
             questions=questions,
             seed=run_seed,  # Return the seed used for this request
@@ -204,6 +207,9 @@ async def get_daily_challenge_questions(
             user_id=current_user.id,
             session=session
         )
+        
+        # Commit any newly fetched questions to database
+        await session.commit()
         
         # Get challenge for metadata
         challenge = await session.get(DailyChallenge, challenge_id)

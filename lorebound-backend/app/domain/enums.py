@@ -9,6 +9,10 @@ class DungeonCategory(str, Enum):
     MUSIC = "music"
     HISTORY = "history"
     POP_CULTURE = "pop_culture"
+    BOOKS = "books"
+    SCIENCE = "science"
+    GEOGRAPHY = "geography"
+    GENERAL = "general"
 
 
 class ItemSlot(str, Enum):

@@ -311,11 +311,48 @@ class TriviaAPIClient:
         ]
 
     async def _get_opentdb_category_id(self, category_name: str) -> Optional[int]:
-        """Get OpenTDB category ID by name."""
+        """Get OpenTDB category ID by name with proper mapping for game categories."""
+        # Map our dungeon categories to OpenTDB category names
+        category_mapping = {
+            "sports": "Sports",
+            "music": "Entertainment: Music",
+            "history": "History",
+            "pop_culture": ["Entertainment: Television", "Entertainment: Film", "Entertainment: Video Games", "Entertainment: Board Games", "Entertainment: Comics"],
+            # Fallback mappings
+            "general": "General Knowledge",
+            "science": "Science & Nature",
+            "geography": "Geography",
+            "books": "Entertainment: Books"
+        }
+        
+        # Get the mapped category name(s)
+        mapped_category = category_mapping.get(category_name.lower(), category_name)
+        
+        # Fetch all OpenTDB categories
         categories = await self._get_opentdb_categories()
+        
+        # If mapped_category is a list, try each one in order
+        if isinstance(mapped_category, list):
+            for potential_match in mapped_category:
+                for cat in categories:
+                    if cat.name.lower() == potential_match.lower():
+                        logger.info(f"Mapped '{category_name}' to OpenTDB category: '{cat.name}' (ID: {cat.id})")
+                        return cat.id
+        else:
+            # Single mapping - exact match
+            for cat in categories:
+                if cat.name.lower() == mapped_category.lower():
+                    logger.info(f"Mapped '{category_name}' to OpenTDB category: '{cat.name}' (ID: {cat.id})")
+                    return cat.id
+        
+        # Fallback: try partial matching
+        logger.warning(f"No exact match for category '{category_name}', attempting partial match...")
         for cat in categories:
-            if cat.name.lower() == category_name.lower():
+            if category_name.lower() in cat.name.lower() or cat.name.lower() in category_name.lower():
+                logger.info(f"Partial match: '{category_name}' to OpenTDB category: '{cat.name}' (ID: {cat.id})")
                 return cat.id
+        
+        logger.warning(f"Could not map category '{category_name}' to any OpenTDB category")
         return None
 
     def _parse_opentdb_response(self, data: Dict[str, Any]) -> List[TriviaQuestion]:

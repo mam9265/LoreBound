@@ -18,16 +18,18 @@ logger = logging.getLogger(__name__)
 # Rarity drop rates (percentages)
 RARITY_DROP_RATES = {
     "normal_run": {
-        ItemRarity.COMMON: 0.60,    # 60%
-        ItemRarity.RARE: 0.30,      # 30%
-        ItemRarity.EPIC: 0.09,      # 9%
-        ItemRarity.LEGENDARY: 0.01,  # 1%
+        ItemRarity.COMMON: 0.50,      # 50%
+        ItemRarity.UNCOMMON: 0.30,    # 30%
+        ItemRarity.RARE: 0.15,        # 15%
+        ItemRarity.EPIC: 0.04,        # 4%
+        ItemRarity.LEGENDARY: 0.01,    # 1%
     },
     "daily_challenge": {
-        ItemRarity.COMMON: 0.20,    # 20%
-        ItemRarity.RARE: 0.45,      # 45%
-        ItemRarity.EPIC: 0.30,      # 30%
-        ItemRarity.LEGENDARY: 0.05,  # 5%
+        ItemRarity.COMMON: 0.10,      # 10%
+        ItemRarity.UNCOMMON: 0.25,    # 25%
+        ItemRarity.RARE: 0.40,        # 40%
+        ItemRarity.EPIC: 0.20,        # 20%
+        ItemRarity.LEGENDARY: 0.05,    # 5%
     },
 }
 
@@ -198,9 +200,29 @@ class InventoryService:
                 ]
                 
                 if not available_items:
-                    # If no items of this rarity available, try next rarity down
-                    logger.warning(f"No available items of rarity {rarity} for user {user_id}")
-                    continue
+                    # If no items of this rarity available, try other rarities
+                    logger.warning(f"No available items of rarity {rarity} for user {user_id}, trying other rarities...")
+                    
+                    # Try all rarities in order: Uncommon, Rare, Epic, Legendary, Common
+                    fallback_order = [ItemRarity.UNCOMMON, ItemRarity.RARE, ItemRarity.EPIC, ItemRarity.LEGENDARY, ItemRarity.COMMON]
+                    
+                    for fallback_rarity in fallback_order:
+                        if fallback_rarity == rarity:
+                            continue  # Skip the one we already tried
+                        
+                        available_items = [
+                            item for item in items_by_rarity.get(fallback_rarity, [])
+                            if item.id not in owned_item_ids
+                        ]
+                        
+                        if available_items:
+                            rarity = fallback_rarity
+                            logger.info(f"Found {len(available_items)} available {fallback_rarity} items as fallback")
+                            break
+                    
+                    if not available_items:
+                        logger.warning(f"No available items of any rarity for user {user_id}, skipping reward")
+                        continue
                 
                 # Randomly select an item
                 selected_item = random.choice(available_items)
@@ -217,12 +239,13 @@ class InventoryService:
                     "id": str(selected_item.id),
                     "slug": selected_item.slug,
                     "name": selected_item.name,
-                    "slot": selected_item.slot.value,
-                    "rarity": selected_item.rarity.value,
+                    "slot": selected_item.slot.value if hasattr(selected_item.slot, 'value') else str(selected_item.slot),
+                    "rarity": selected_item.rarity.value if hasattr(selected_item.rarity, 'value') else str(selected_item.rarity),
                     "stats": selected_item.stats
                 })
                 
-                logger.info(f"Rewarded {selected_item.name} ({selected_item.rarity.value}) to user {user_id}")
+                rarity_str = selected_item.rarity.value if hasattr(selected_item.rarity, 'value') else str(selected_item.rarity)
+                logger.info(f"Rewarded {selected_item.name} ({rarity_str}) to user {user_id}")
             
             return rewarded_items
             

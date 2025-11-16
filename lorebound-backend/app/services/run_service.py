@@ -18,8 +18,9 @@ from ..schemas.run import (
     RunStartRequest,
     RunSubmitRequest,
     RunResponse,
-    ScoreResponse,
-    RunStatsResponse
+    RunStatsResponse,
+    StartRunResponse,
+    ItemBonusResponse
 )
 from .exceptions import (
     RunServiceError,
@@ -49,11 +50,11 @@ class RunService:
         user_id: UUID,
         start_data: RunStartRequest,
         session: AsyncSession
-    ) -> RunResponse:
+    ) -> StartRunResponse:
         """
         Start a new game run for a user.
         
-        Creates a new run with anti-cheat signature and returns run details.
+        Creates a new run with anti-cheat signature and returns run details including equipped item bonuses.
         """
         logger.info(f"Starting run for user {user_id}, dungeon {start_data.dungeon_id}")
 
@@ -66,6 +67,38 @@ class RunService:
             # Generate anti-cheat session token
             session_token = self._generate_session_token(user_id, start_data.dungeon_id)
             
+            # Load user's equipped items
+            from ..repositories.inventory_repo import InventoryRepository
+            inventory_repo = InventoryRepository(session)
+            equipped_items_dict = await inventory_repo.get_user_equipped_items(user_id)
+            
+            # Convert equipped items to ItemBonusResponse and calculate total bonuses
+            equipped_items = []
+            total_bonuses = {}
+            
+            for slot, item in equipped_items_dict.items():
+                # Create item response
+                item_response = ItemBonusResponse(
+                    item_id=item.id,
+                    name=item.name,
+                    slot=item.slot.value if hasattr(item.slot, 'value') else str(item.slot),
+                    rarity=item.rarity.value if hasattr(item.rarity, 'value') else str(item.rarity),
+                    stats=item.stats or {}
+                )
+                equipped_items.append(item_response)
+                
+                # Accumulate bonuses
+                for stat_name, stat_value in (item.stats or {}).items():
+                    if isinstance(stat_value, (int, float)):
+                        # For multipliers (e.g., score_multiplier), multiply them together
+                        if 'multiplier' in stat_name:
+                            total_bonuses[stat_name] = total_bonuses.get(stat_name, 1.0) * stat_value
+                        else:
+                            # For additive bonuses (e.g., time_extension), add them
+                            total_bonuses[stat_name] = total_bonuses.get(stat_name, 0) + stat_value
+            
+            logger.info(f"User {user_id} has {len(equipped_items)} equipped items with bonuses: {total_bonuses}")
+            
             # Create run
             run = await self.run_repo.create_run(
                 user_id=user_id,
@@ -73,11 +106,25 @@ class RunService:
                 seed=seed,
                 floor=start_data.floor,
                 session_token=session_token,
-                summary={"client_metadata": start_data.client_metadata}
+                summary={
+                    "client_metadata": start_data.client_metadata,
+                    "equipped_items": [{"id": str(item.item_id), "name": item.name} for item in equipped_items],
+                    "total_bonuses": total_bonuses
+                }
             )
 
             logger.info(f"Run started: {run.id} for user {user_id}")
-            return RunResponse.model_validate(run)
+            
+            # Return StartRunResponse with item bonuses
+            return StartRunResponse(
+                run_id=run.id,
+                seed=seed,
+                session_token=session_token,
+                dungeon_id=start_data.dungeon_id,
+                floor=start_data.floor,
+                equipped_items=equipped_items,
+                total_bonuses=total_bonuses
+            )
 
         except Exception as e:
             logger.error(f"Failed to start run for user {user_id}: {e}")
@@ -186,8 +233,26 @@ class RunService:
                 updated_run.summary = updated_run.summary or {}
                 updated_run.summary["rewards"] = []
 
+            # Fetch the updated run with dungeon relationship
+            final_run = await self.run_repo.get_run_by_id(run_id)
+            
             logger.info(f"Run submitted successfully: {run_id} for user {user_id}")
-            return RunResponse.model_validate(updated_run)
+            
+            # Manually create response with dungeon data
+            from ..schemas.content import DungeonMetaResponse
+            run_dict = {
+                'id': final_run.id,
+                'user_id': final_run.user_id,
+                'dungeon_id': final_run.dungeon_id,
+                'floor': final_run.floor,
+                'status': final_run.status,
+                'session_token': final_run.session_token,
+                'total_score': final_run.total_score,
+                'started_at': final_run.started_at,
+                'completed_at': final_run.completed_at,
+                'dungeon': DungeonMetaResponse.model_validate(final_run.dungeon) if final_run.dungeon else None
+            }
+            return RunResponse(**run_dict)
 
         except (InvalidRunDataError, AntiCheatViolationError, ScoreCalculationError):
             raise
@@ -212,7 +277,26 @@ class RunService:
                 offset=offset
             )
 
-            return [RunResponse.model_validate(run) for run in runs]
+            # Convert runs to response objects
+            from ..schemas.content import DungeonMetaResponse
+            responses = []
+            for run in runs:
+                # Manually create response with dungeon data
+                run_dict = {
+                    'id': run.id,
+                    'user_id': run.user_id,
+                    'dungeon_id': run.dungeon_id,
+                    'floor': run.floor,
+                    'status': run.status,
+                    'session_token': run.session_token,
+                    'total_score': run.total_score,
+                    'started_at': run.started_at,
+                    'completed_at': run.completed_at,
+                    'dungeon': DungeonMetaResponse.model_validate(run.dungeon) if run.dungeon else None
+                }
+                responses.append(RunResponse(**run_dict))
+            
+            return responses
 
         except Exception as e:
             logger.error(f"Failed to fetch runs for user {user_id}: {e}")
@@ -235,7 +319,21 @@ class RunService:
             if run.user_id != user_id:
                 raise InvalidRunDataError("Run does not belong to user")
 
-            return RunResponse.model_validate(run)
+            # Manually create response with dungeon data
+            from ..schemas.content import DungeonMetaResponse
+            run_dict = {
+                'id': run.id,
+                'user_id': run.user_id,
+                'dungeon_id': run.dungeon_id,
+                'floor': run.floor,
+                'status': run.status,
+                'session_token': run.session_token,
+                'total_score': run.total_score,
+                'started_at': run.started_at,
+                'completed_at': run.completed_at,
+                'dungeon': DungeonMetaResponse.model_validate(run.dungeon) if run.dungeon else None
+            }
+            return RunResponse(**run_dict)
 
         except InvalidRunDataError:
             raise
@@ -322,20 +420,22 @@ class RunService:
                     raise ScoreCalculationError(f"Score too high: turn {i}")
 
                 # Validate answer time (reasonable bounds)
-                if score_data.answer_time < 0.5:  # Min half second
+                # Allow very fast answers (0.1s minimum) - players can be quick!
+                if score_data.answer_time < 0.1:  # Min 0.1 second (not instant)
                     raise ScoreCalculationError(f"Answer time too fast: turn {i}")
                 
-                if score_data.answer_time > 60:  # Max 1 minute per question
+                if score_data.answer_time > 90:  # Max 90 seconds (accounting for time extensions)
                     raise ScoreCalculationError(f"Answer time too slow: turn {i}")
 
-                # Create validated score entry
+                # Create validated score entry (includes item bonus from equipped items)
                 validated_score = {
                     "question_index": i,
                     "points": score_data.points,
                     "answer_time": score_data.answer_time,
                     "is_correct": score_data.is_correct,
                     "streak_bonus": score_data.streak_bonus,
-                    "time_bonus": score_data.time_bonus
+                    "time_bonus": score_data.time_bonus,
+                    "item_bonus": score_data.item_bonus
                 }
                 
                 validated_scores.append(validated_score)
@@ -388,10 +488,28 @@ class RunService:
                 raise InvalidRunDataError(f"Run is not in progress: {run.status}")
 
             # Mark run as abandoned
-            updated_run = await self.run_repo.abandon_run(run_id)
+            await self.run_repo.abandon_run(run_id)
+            
+            # Fetch the updated run with dungeon relationship
+            updated_run = await self.run_repo.get_run_by_id(run_id)
             
             logger.info(f"Run abandoned: {run_id} for user {user_id}")
-            return RunResponse.model_validate(updated_run)
+            
+            # Manually create response with dungeon data
+            from ..schemas.content import DungeonMetaResponse
+            run_dict = {
+                'id': updated_run.id,
+                'user_id': updated_run.user_id,
+                'dungeon_id': updated_run.dungeon_id,
+                'floor': updated_run.floor,
+                'status': updated_run.status,
+                'session_token': updated_run.session_token,
+                'total_score': updated_run.total_score,
+                'started_at': updated_run.started_at,
+                'completed_at': updated_run.completed_at,
+                'dungeon': DungeonMetaResponse.model_validate(updated_run.dungeon) if updated_run.dungeon else None
+            }
+            return RunResponse(**run_dict)
 
         except InvalidRunDataError:
             raise

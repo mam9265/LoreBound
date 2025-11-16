@@ -18,7 +18,8 @@ from ....schemas.run import (
     RunStartRequest,
     RunSubmitRequest,
     RunResponse,
-    RunStatsResponse
+    RunStatsResponse,
+    StartRunResponse
 )
 from ....domain.models import User
 
@@ -26,16 +27,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/runs", tags=["runs"])
 
 
-@router.post("/start", response_model=RunResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/start", response_model=StartRunResponse, status_code=status.HTTP_201_CREATED)
 async def start_run(
     start_data: RunStartRequest,
     service_session: tuple[RunService, AsyncSession] = Depends(get_run_service_with_session),
     current_user: User = Depends(get_current_active_user)
-) -> RunResponse:
+) -> StartRunResponse:
     """
     Start a new game run.
     
-    Creates a new game session with anti-cheat token for the specified dungeon.
+    Creates a new game session with anti-cheat token and returns equipped item bonuses.
+    The frontend should use the returned bonuses to enhance gameplay.
     """
     run_service, session = service_session
     
@@ -43,7 +45,7 @@ async def start_run(
         logger.info(f"Starting run for user {current_user.id}, dungeon {start_data.dungeon_id}")
         result = await run_service.start_run(current_user.id, start_data, session)
         await session.commit()
-        logger.info(f"Run started successfully: {result.id}")
+        logger.info(f"Run started successfully: {result.run_id} with {len(result.equipped_items)} equipped items")
         return result
         
     except Exception as e:

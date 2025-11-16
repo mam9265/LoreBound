@@ -74,6 +74,48 @@ class RunService {
   }
 
   /**
+   * Start a daily challenge run
+   * @param {string} dungeonId - UUID of the dungeon
+   * @param {object} clientMetadata - Optional client metadata
+   * @returns {Promise<Object>} Run data with session token and seed
+   */
+  async startDailyChallengeRun(dungeonId, clientMetadata = {}) {
+    return await AuthUtils.authenticatedRequest(async (token) => {
+      try {
+        const response = await this.fetchWithTimeout(`${this.baseURL}/v1/runs/start`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            dungeon_id: dungeonId,
+            floor: 1,
+            is_daily: true,  // Mark as daily challenge
+            client_metadata: {
+              ...clientMetadata,
+              timestamp: Date.now(),
+            },
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error('[RunService] Start daily challenge failed:', data);
+          throw new Error(data.detail || 'Failed to start daily challenge');
+        }
+
+        console.log('[RunService] Daily challenge run started:', data.run_id);
+        return data;
+      } catch (error) {
+        console.error('Start daily challenge error:', error);
+        throw error;
+      }
+    });
+  }
+
+  /**
    * Submit a completed run
    * @param {string} runId - UUID of the run
    * @param {Array} turnData - Array of turn data objects
@@ -86,6 +128,41 @@ class RunService {
   async submitRun(runId, turnData, scores, clientSignature, isVictory = true, isDailyChallenge = false) {
     return await AuthUtils.authenticatedRequest(async (token) => {
       try {
+        // Transform turn data to match backend schema
+        const transformedTurnData = turnData.map(turn => ({
+          question_index: turn.i,
+          answer_index: turn.a,
+          time_taken: turn.t / 1000, // Convert ms to seconds
+        }));
+
+        // Validate data before sending
+        if (transformedTurnData.length !== scores.length) {
+          console.error('[RunService] Data mismatch:', {
+            turns: transformedTurnData.length,
+            scores: scores.length
+          });
+          throw new Error(`Data mismatch: ${transformedTurnData.length} turns but ${scores.length} scores`);
+        }
+
+        // Validate all scores have required fields
+        for (let i = 0; i < scores.length; i++) {
+          const score = scores[i];
+          if (score.points === undefined || score.answer_time === undefined || score.is_correct === undefined) {
+            console.error('[RunService] Invalid score at index', i, score);
+            throw new Error(`Invalid score data at index ${i}`);
+          }
+        }
+
+        console.log('[RunService] Submitting run:', {
+          runId,
+          turnCount: transformedTurnData.length,
+          scoresCount: scores.length,
+          sampleTurn: transformedTurnData[0],
+          sampleScore: scores[0],
+          isVictory,
+          isDailyChallenge
+        });
+
         const response = await this.fetchWithTimeout(
           `${this.baseURL}/v1/runs/${runId}/submit`,
           {
@@ -95,7 +172,7 @@ class RunService {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              turn_data: turnData,
+              turn_data: transformedTurnData,
               scores: scores,
               client_signature: clientSignature,
               is_victory: isVictory,
@@ -107,9 +184,15 @@ class RunService {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.detail || 'Failed to submit run');
+          console.error('[RunService] Submit failed:', {
+            status: response.status,
+            detail: data.detail,
+            fullError: data
+          });
+          throw new Error(JSON.stringify(data.detail || data || 'Failed to submit run'));
         }
 
+        console.log('[RunService] Submit successful!');
         return data;
       } catch (error) {
         console.error('Submit run error:', error);

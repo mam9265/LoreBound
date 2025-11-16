@@ -473,6 +473,9 @@ const resultStyles = StyleSheet.create({
   raritycommon: {
     borderColor: '#9e9e9e',
   },
+  rarityuncommon: {
+    borderColor: '#4caf50',
+  },
   rarityrare: {
     borderColor: '#4a90e2',
   },

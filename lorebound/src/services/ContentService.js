@@ -144,8 +144,10 @@ class ContentService {
       'sports': 'Sports',
       'music': 'Music',
       'pop_culture': 'Pop Culture',
-      'all_around': 'All Around',
       'books': 'Books',
+      'science': 'Science',
+      'geography': 'Geography',
+      'general': 'General Knowledge',
     };
     return displayNames[category] || category;
   }
@@ -161,8 +163,10 @@ class ContentService {
       'sports': '⚽',
       'music': '🎵',
       'pop_culture': '📺',
-      'all_around': '🌟',
       'books': '📚',
+      'science': '🔬',
+      'geography': '🌍',
+      'general': '🌟',
     };
     return icons[category] || '❓';
   }
