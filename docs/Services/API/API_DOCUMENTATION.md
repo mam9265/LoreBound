@@ -657,9 +657,9 @@ X-RateLimit-Reset: 1642248000
 ## 🔐 Security Notes
 
 1. **JWT Tokens**: Include user ID and expiration time
-2. **Password Requirements**: Minimum 8 characters, maximum 128
+2. **Password Requirements**: Minimum 8 characters, maximum 25
 3. **Email Validation**: RFC-compliant email format required
-4. **Handle Requirements**: 3-50 characters, unique per user
+4. **Handle Requirements**: 3-15 characters, unique per user
 5. **CORS**: Configured for allowed origins only
 6. **Anti-Cheat**: Cryptographic signatures for game runs
 

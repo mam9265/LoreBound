@@ -250,7 +250,7 @@ class TestAuthValidation:
         data = {
             "email": "test@example.com",
             "password": "SecurePassword123!",
-            "handle": "a" * 51  # Exceeds 50 character limit
+            "handle": "a" * 16  # Exceeds 15 character limit
         }
         
         with pytest.raises(ValueError):
@@ -260,7 +260,7 @@ class TestAuthValidation:
         """Test password too long in registration request."""
         data = {
             "email": "test@example.com",
-            "password": "a" * 129,  # Exceeds 128 character limit
+            "password": "a" * 26,  # Exceeds 25 character limit
             "handle": "TestPlayer"
         }
         

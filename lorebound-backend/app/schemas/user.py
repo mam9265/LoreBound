@@ -38,7 +38,7 @@ class ProfileResponse(BaseModel):
 
 class ProfileUpdateRequest(BaseModel):
     """Profile update request schema."""
-    handle: Optional[str] = Field(None, min_length=3, max_length=50, description="New display name")
+    handle: Optional[str] = Field(None, min_length=3, max_length=15, description="New display name")
     avatar_layers: Optional[Dict[str, Any]] = Field(None, description="Avatar customization data")
 
     model_config = ConfigDict(

@@ -49,7 +49,7 @@ class Profile(Base):
     __tablename__ = "profiles"
     
     user_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
-    handle: Mapped[str] = mapped_column(String(50), unique=True)
+    handle: Mapped[str] = mapped_column(String(15), unique=True)
     level: Mapped[int] = mapped_column(Integer, default=1)
     xp: Mapped[int] = mapped_column(Integer, default=0)
     avatar_layers: Mapped[dict] = mapped_column(JSON, default=dict)

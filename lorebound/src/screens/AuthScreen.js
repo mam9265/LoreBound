@@ -53,7 +53,8 @@ function AuthScreen({ navigation }) {
       ]);
     } catch (error) {
       console.error('[AUTH] Login error:', error);
-      Alert.alert('Login Failed', error.message || 'Login failed. Please check your credentials.');
+      const errorMessage = error?.message || error?.toString() || 'Login failed. Please check your credentials.';
+      Alert.alert('Login Failed', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -82,7 +83,9 @@ function AuthScreen({ navigation }) {
         { text: 'OK', onPress: () => navigation.navigate('MainMenu') },
       ]);
     } catch (error) {
-      Alert.alert('Registration Failed', error.message || 'Registration failed. Please try again.');
+      console.error('[AUTH] Registration error:', error);
+      const errorMessage = error?.message || error?.toString() || 'Registration failed. Please try again.';
+      Alert.alert('Registration Failed', errorMessage);
     } finally {
       setLoading(false);
     }

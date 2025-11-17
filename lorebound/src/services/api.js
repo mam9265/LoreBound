@@ -54,13 +54,23 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Login failed');
+        // Handle validation errors (422) with detailed messages
+        if (response.status === 422 && data.detail) {
+          throw new Error(data.detail);
+        }
+        // Handle other errors
+        const errorMessage = data.detail || data.message || 'Login failed';
+        throw new Error(errorMessage);
       }
 
       return data;
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
+      // If error already has a message, re-throw it; otherwise wrap it
+      if (error.message) {
+        throw error;
+      }
+      throw new Error(error.toString() || 'Login failed');
     }
   }
 
@@ -88,13 +98,23 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Registration failed');
+        // Handle validation errors (422) with detailed messages
+        if (response.status === 422 && data.detail) {
+          throw new Error(data.detail);
+        }
+        // Handle other errors
+        const errorMessage = data.detail || data.message || 'Registration failed';
+        throw new Error(errorMessage);
       }
 
       return data;
     } catch (error) {
       console.error('Registration error:', error);
-      throw error;
+      // If error already has a message, re-throw it; otherwise wrap it
+      if (error.message) {
+        throw error;
+      }
+      throw new Error(error.toString() || 'Registration failed');
     }
   }
 

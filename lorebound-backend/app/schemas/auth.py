@@ -23,8 +23,8 @@ from .email_validation import email_validator_func
 class UserRegisterRequest(BaseModel):
     """User registration request schema."""
     email: EmailStr = Field(..., description="User email address")
-    password: str = Field(..., min_length=8, max_length=128, description="User password")
-    handle: str = Field(..., min_length=3, max_length=50, description="User display name")
+    password: str = Field(..., min_length=8, max_length=25, description="User password")
+    handle: str = Field(..., min_length=3, max_length=15, description="User display name")
 
     @field_validator('email')
     @classmethod
@@ -73,7 +73,7 @@ class UserLoginRequest(BaseModel):
 class AppleSignInRequest(BaseModel):
     """Apple Sign-In request schema."""
     identity_token: str = Field(..., description="Apple identity token")
-    handle: Optional[str] = Field(None, min_length=3, max_length=50, description="User display name for new users")
+    handle: Optional[str] = Field(None, min_length=3, max_length=15, description="User display name for new users")
 
     model_config = ConfigDict(
         json_schema_extra={

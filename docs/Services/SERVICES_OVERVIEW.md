@@ -37,7 +37,7 @@ class AuthenticationService:
 - `Settings` - Configuration management
 
 ### Security Features
-- Password length validation (8-128 characters)
+- Password length validation (8-25 characters)
 - Email format validation with fallback
 - Handle uniqueness enforcement
 - Account status checking

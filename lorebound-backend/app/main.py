@@ -1,7 +1,9 @@
 """FastAPI application factory."""
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from .core.config import settings
@@ -86,6 +88,76 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    
+    # Add custom exception handler for validation errors
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        """Handle validation errors and return user-friendly messages."""
+        errors = []
+        for error in exc.errors():
+            field = " -> ".join(str(loc) for loc in error["loc"])
+            error_type = error["type"]
+            error_msg = error.get("msg", "")
+            input_value = error.get("input")
+            
+            # Extract field name for cleaner messages
+            field_name = field.split(" -> ")[-1] if " -> " in field else field
+            field_lower = field.lower()
+            
+            # Create user-friendly error messages
+            if "string_too_short" in error_type:
+                min_length = error.get("ctx", {}).get("min_length", "unknown")
+                if "password" in field_lower:
+                    errors.append(f"Password must be at least {min_length} characters long")
+                elif "handle" in field_lower or "username" in field_lower:
+                    errors.append(f"Username must be at least {min_length} characters long")
+                else:
+                    errors.append(f"{field_name}: Must be at least {min_length} characters")
+            elif "string_too_long" in error_type:
+                max_length = error.get("ctx", {}).get("max_length", "unknown")
+                if "password" in field_lower:
+                    errors.append(f"Password must be no more than {max_length} characters long")
+                elif "handle" in field_lower or "username" in field_lower:
+                    errors.append(f"Username must be no more than {max_length} characters long")
+                else:
+                    errors.append(f"{field_name}: Must be no more than {max_length} characters")
+            elif "value_error" in error_type:
+                # Handle email validation errors
+                if "email" in field_lower:
+                    if "invalid email" in error_msg.lower() or "email format" in error_msg.lower():
+                        errors.append("Please enter a valid email address")
+                    else:
+                        errors.append(f"Email: {error_msg}")
+                else:
+                    errors.append(f"{field_name}: {error_msg}")
+            elif "missing" in error_type:
+                if "email" in field_lower:
+                    errors.append("Email is required")
+                elif "password" in field_lower:
+                    errors.append("Password is required")
+                elif "handle" in field_lower or "username" in field_lower:
+                    errors.append("Username is required")
+                else:
+                    errors.append(f"{field_name} is required")
+            elif "type_error" in error_type:
+                errors.append(f"{field_name}: Invalid format")
+            else:
+                # Fallback to generic message
+                if "email" in field_lower and "email" not in error_msg.lower():
+                    errors.append(f"Email: {error_msg}")
+                else:
+                    errors.append(f"{field_name}: {error_msg}")
+        
+        # Join all errors into a single message
+        error_message = "; ".join(errors) if errors else "Validation error"
+        
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "detail": error_message,
+                "errors": errors
+            }
+        )
     
     # Include API routers with v1 prefix
     app.include_router(auth.router, prefix="/v1")
