@@ -48,6 +48,9 @@ Backend services documentation organized into subdirectories:
 ### `/Summaries/`
 Session summaries, final status reports, and project completion summaries.
 
+### `/Archive/`
+Archived documentation from previous development phases, sprints, and sessions. Contains historical documentation, fix guides, implementation notes, and testing documentation.
+
 ## 📖 Quick Navigation
 
 - **Getting Started**: See `/Guides/TEAMMATE_UPDATE_GUIDE.md`
@@ -66,4 +69,5 @@ Session summaries, final status reports, and project completion summaries.
 - **Bug Fixes**: `/DungeonCategoryFix/`
 - **Project Status**: `/Summaries/`
 - **How-To Guides**: `/Guides/`
+- **Historical Documentation**: `/Archive/`
 
