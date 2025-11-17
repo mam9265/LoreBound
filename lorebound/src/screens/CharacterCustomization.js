@@ -52,6 +52,21 @@ function CharacterCustomization({ navigation }) {
     Alert.alert('Saved!', 'Your equipment has been saved!');
   };
 
+  const handleOpenModal = async () => {
+    // Refresh inventory from database when opening modal
+    try {
+      console.log('[CharacterCustomization] Refreshing inventory from database...');
+      const freshInventory = await InventoryService.getInventory(true); // forceRefresh = true
+      setInventory(freshInventory);
+      setEquippedItems(freshInventory.equipped_items || {});
+      console.log('[CharacterCustomization] Inventory refreshed from database');
+    } catch (error) {
+      console.error('[CharacterCustomization] Error refreshing inventory:', error);
+      // Still open modal even if refresh fails, use existing data
+    }
+    setModalVisible(true);
+  };
+
   const saveColorChoice = async () => {
     setSaving(true);
     try {
@@ -246,7 +261,7 @@ function CharacterCustomization({ navigation }) {
 
         {/* Character Preview */}
         <View style={styles.previewContainer}>
-          <TouchableOpacity onPress={() => setModalVisible(true)} activeOpacity={0.8}>
+          <TouchableOpacity onPress={handleOpenModal} activeOpacity={0.8}>
             <Image
               source={knightSprites[colorIndex]}
               style={styles.characterImage}
