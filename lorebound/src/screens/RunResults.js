@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
 } from 'react-native';
 import styles from '../styles/Styles';
@@ -22,9 +21,16 @@ function RunResults({ navigation, route }) {
     challengeModifiers = {},
   } = route.params || {};
 
+  const effectiveScore = score ?? runData?.total_score ?? 0;
+
   const accuracy = questionsAnswered > 0
     ? Math.round((correctAnswers / questionsAnswered) * 100)
     : 0;
+
+  const rewards = runData?.summary?.rewards || [];
+  const rewardCount = rewards.length;
+  const firstTwoRewards = rewards.slice(0, 2).map(r => r.name).join(', ');
+  const remainingRewards = rewardCount > 2 ? rewardCount - 2 : 0;
 
   const handleViewLeaderboard = () => {
     navigation.navigate('Leaderboard');
@@ -44,204 +50,189 @@ function RunResults({ navigation, route }) {
     navigation.navigate('RunHistory', { from: 'RunResults' });
   };
 
+  const getShortMessage = () => {
+    if (!isVictory) return 'Every run makes you stronger. Try again soon!';
+    if (accuracy >= 90) return "Outstanding performance – you're a trivia master!";
+    if (accuracy >= 75) return 'Great job – you really know your stuff!';
+    if (accuracy >= 60) return 'Nice work – dungeon cleared!';
+    return 'You made it through – aim for higher accuracy next time!';
+  };
+
   return (
-    <ScrollView style={resultStyles.container}>
-      <View style={resultStyles.content}>
+    <View style={resultStyles.container}>
+      {/* TOP CONTENT */}
+      <View style={resultStyles.topSection}>
         {/* Header */}
         <View style={resultStyles.header}>
           {isDailyChallenge && (
             <Text style={resultStyles.dailyBadge}>🏆 DAILY CHALLENGE 🏆</Text>
           )}
-          <Text style={[resultStyles.title, !isVictory && resultStyles.defeatTitle]}>
+
+          <Text
+            style={[
+              resultStyles.title,
+              !isVictory && resultStyles.defeatTitle,
+            ]}
+          >
             {isVictory ? 'Victory!' : 'Defeated!'}
           </Text>
-          <Text style={resultStyles.subtitle}>{dungeonName}</Text>
-          {isVictory && (
-            <Text style={resultStyles.victorySubtext}>
-              {isDailyChallenge ? 'Challenge Complete!' : 'Dungeon Cleared!'} {questionsAnswered}/{totalQuestions} Questions
-            </Text>
+
+          {!!dungeonName && (
+            <Text style={resultStyles.subtitle}>{dungeonName}</Text>
           )}
-          {!isVictory && (
+
+          {isVictory ? (
+            <Text style={resultStyles.victorySubtext}>
+              {isDailyChallenge ? 'Challenge Complete!' : 'Dungeon Cleared!'}{' '}
+              {questionsAnswered}/{totalQuestions} Questions
+            </Text>
+          ) : (
             <Text style={resultStyles.defeatSubtext}>
               You ran out of lives. {questionsAnswered}/{totalQuestions} Questions
             </Text>
           )}
+
           {isDailyChallenge && challengeModifiers.points_multiplier && (
             <Text style={resultStyles.bonusText}>
-              ✨ {challengeModifiers.points_multiplier}x Points Bonus Applied! ✨
+              ✨ {challengeModifiers.points_multiplier}x Points Bonus ✨
             </Text>
           )}
+
+          {/* One-line performance message */}
+          <Text style={resultStyles.messageText}>{getShortMessage()}</Text>
         </View>
 
-        {/* Score Card */}
-        <View style={resultStyles.scoreCard}>
-          <Text style={resultStyles.scoreLabel}>Final Score</Text>
-          <Text style={resultStyles.scoreValue}>{score || runData?.total_score || 0}</Text>
-          {runData?.rank && (
-            <Text style={resultStyles.rankText}>Rank: #{runData.rank}</Text>
-          )}
-        </View>
-
-        {/* Rewards Section - Only show if victory and rewards exist */}
-        {isVictory && runData?.summary?.rewards && runData.summary.rewards.length > 0 && (
-          <View style={resultStyles.rewardsSection}>
-            <Text style={resultStyles.rewardsTitle}>
-              🎁 Items Obtained! 🎁
-            </Text>
-            <Text style={resultStyles.rewardsSubtitle}>
-              You earned {runData.summary.rewards.length} new {runData.summary.rewards.length === 1 ? 'item' : 'items'}!
-            </Text>
-            <View style={resultStyles.rewardsGrid}>
-              {runData.summary.rewards.map((item, index) => (
-                <View key={index} style={[resultStyles.rewardCard, resultStyles[`rarity${item.rarity}`]]}>
-                  <Text style={resultStyles.rewardRarity}>
-                    {item.rarity.toUpperCase()}
-                  </Text>
-                  <Text style={resultStyles.rewardName}>{item.name}</Text>
-                  <Text style={resultStyles.rewardSlot}>
-                    {item.slot === 'helmet' && '🪖'}
-                    {item.slot === 'armor' && '🧥'}
-                    {item.slot === 'weapon' && '⚔️'}
-                    {item.slot === 'shield' && '🛡️'}
-                    {' '}{item.slot}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Stats Grid */}
-        <View style={resultStyles.statsGrid}>
-          <View style={resultStyles.statBox}>
-            <Text style={resultStyles.statValue}>{questionsAnswered}</Text>
-            <Text style={resultStyles.statLabel}>Questions</Text>
-          </View>
-
-          <View style={resultStyles.statBox}>
-            <Text style={resultStyles.statValue}>{correctAnswers}</Text>
-            <Text style={resultStyles.statLabel}>Correct</Text>
-          </View>
-
-          <View style={resultStyles.statBox}>
-            <Text style={[resultStyles.statValue, resultStyles.accuracyValue]}>
-              {accuracy}%
-            </Text>
-            <Text style={resultStyles.statLabel}>Accuracy</Text>
-          </View>
-
-          <View style={resultStyles.statBox}>
-            <Text style={resultStyles.statValue}>{maxStreak}🔥</Text>
-            <Text style={resultStyles.statLabel}>Best Streak</Text>
-          </View>
-        </View>
-
-        {/* Performance Message */}
-        <View style={resultStyles.messageCard}>
-          {isVictory ? (
-            // Victory messages based on accuracy
-            <>
-              {accuracy >= 90 && (
-                <>
-                  <Text style={resultStyles.messageTitle}>Legendary!</Text>
-                  <Text style={resultStyles.messageText}>
-                    Outstanding performance! You're a trivia master!
-                  </Text>
-                </>
-              )}
-              {accuracy >= 75 && accuracy < 90 && (
-                <>
-                  <Text style={resultStyles.messageTitle}>Excellent!</Text>
-                  <Text style={resultStyles.messageText}>
-                    Great job! You really know your stuff!
-                  </Text>
-                </>
-              )}
-              {accuracy >= 60 && accuracy < 75 && (
-                <>
-                  <Text style={resultStyles.messageTitle}>Well Done!</Text>
-                  <Text style={resultStyles.messageText}>
-                    Nice work! You cleared the dungeon!
-                  </Text>
-                </>
-              )}
-              {accuracy < 60 && (
-                <>
-                  <Text style={resultStyles.messageTitle}>Victory!</Text>
-                  <Text style={resultStyles.messageText}>
-                    You made it through! Try to improve your accuracy next time!
-                  </Text>
-                </>
-              )}
-            </>
-          ) : (
-            // Defeat messages
-            <>
-              <Text style={resultStyles.messageTitle}>Keep Trying!</Text>
-              <Text style={resultStyles.messageText}>
-                Every run makes you stronger. Study up and try again!
-              </Text>
-            </>
-          )}
-        </View>
-
-        {/* Rewards (placeholder for future implementation) */}
-        <View style={resultStyles.rewardsCard}>
-          <Text style={resultStyles.rewardsTitle}>Rewards Earned</Text>
-          <View style={resultStyles.rewardsList}>
-            <View style={resultStyles.rewardItem}>
-              <Text style={resultStyles.rewardIcon}>⭐</Text>
-              <Text style={resultStyles.rewardText}>
-                {Math.floor(score / 10)} XP
-              </Text>
-            </View>
-            {maxStreak >= 5 && (
-              <View style={resultStyles.rewardItem}>
-                <Text style={resultStyles.rewardIcon}>🔥</Text>
-                <Text style={resultStyles.rewardText}>Streak Master Badge</Text>
-              </View>
-            )}
-            {accuracy === 100 && (
-              <View style={resultStyles.rewardItem}>
-                <Text style={resultStyles.rewardIcon}>💯</Text>
-                <Text style={resultStyles.rewardText}>Perfect Score!</Text>
-              </View>
+        {/* Score + Stats row */}
+        <View style={resultStyles.mainRow}>
+          {/* Score Card */}
+          <View style={resultStyles.scoreCard}>
+            <Text style={resultStyles.scoreLabel}>Final Score</Text>
+            <Text style={resultStyles.scoreValue}>{effectiveScore}</Text>
+            {runData?.rank && (
+              <Text style={resultStyles.rankText}>Rank: #{runData.rank}</Text>
             )}
           </View>
+
+          {/* Stats Column */}
+          <View style={resultStyles.statsColumn}>
+            <View style={resultStyles.statRow}>
+              <View style={resultStyles.statBox}>
+                <Text style={resultStyles.statValue}>{questionsAnswered}</Text>
+                <Text style={resultStyles.statLabel}>Questions</Text>
+              </View>
+              <View style={resultStyles.statBox}>
+                <Text style={resultStyles.statValue}>{correctAnswers}</Text>
+                <Text style={resultStyles.statLabel}>Correct</Text>
+              </View>
+            </View>
+
+            <View style={resultStyles.statRow}>
+              <View style={resultStyles.statBox}>
+                <Text
+                  style={[resultStyles.statValue, resultStyles.accuracyValue]}
+                >
+                  {accuracy}%
+                </Text>
+                <Text style={resultStyles.statLabel}>Accuracy</Text>
+              </View>
+              <View style={resultStyles.statBox}>
+                <Text style={resultStyles.statValue}>{maxStreak}🔥</Text>
+                <Text style={resultStyles.statLabel}>Best Streak</Text>
+              </View>
+            </View>
+          </View>
         </View>
 
-        {/* Action Buttons */}
-        <View style={resultStyles.actionsContainer}>
-          <TouchableOpacity
-            style={[resultStyles.actionButton, resultStyles.primaryButton]}
-            onPress={handlePlayAgain}
-          >
-            <Text style={resultStyles.primaryButtonText}>Play Again</Text>
-          </TouchableOpacity>
+        {/* Compact Rewards Strip */}
+        <View style={resultStyles.compactRewardsCard}>
+          <Text style={resultStyles.compactRewardsTitle}>Rewards</Text>
 
-          <TouchableOpacity
-            style={[resultStyles.actionButton, resultStyles.secondaryButton]}
-            onPress={handleViewLeaderboard}
-          >
-            <Text style={resultStyles.secondaryButtonText}>View Leaderboard</Text>
-          </TouchableOpacity>
+          <View style={resultStyles.compactRewardsRow}>
+            <Text style={resultStyles.rewardIcon}>⭐</Text>
+            <Text style={resultStyles.compactRewardsText}>
+              {Math.floor(effectiveScore / 10)} XP
+            </Text>
+          </View>
 
-          <TouchableOpacity
-            style={[resultStyles.actionButton, resultStyles.secondaryButton]}
-            onPress={handleViewHistory}
-          >
-            <Text style={resultStyles.secondaryButtonText}>Run History</Text>
-          </TouchableOpacity>
+          {maxStreak >= 5 && (
+            <View style={resultStyles.compactRewardsRow}>
+              <Text style={resultStyles.rewardIcon}>🔥</Text>
+              <Text style={resultStyles.compactRewardsText}>
+                Streak Master Badge
+              </Text>
+            </View>
+          )}
 
-          <TouchableOpacity
-            style={[resultStyles.actionButton, resultStyles.tertiaryButton]}
-            onPress={handleMainMenu}
-          >
-            <Text style={resultStyles.tertiaryButtonText}>Main Menu</Text>
-          </TouchableOpacity>
+          {accuracy === 100 && (
+            <View style={resultStyles.compactRewardsRow}>
+              <Text style={resultStyles.rewardIcon}>💯</Text>
+              <Text style={resultStyles.compactRewardsText}>Perfect Score!</Text>
+            </View>
+          )}
+
+          {rewardCount > 0 && (
+            <View style={resultStyles.compactRewardsRow}>
+              <Text style={resultStyles.rewardIcon}>🎁</Text>
+              <Text
+                style={resultStyles.compactRewardsText}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                Items: {firstTwoRewards}
+                {remainingRewards > 0 && ` + ${remainingRewards} more`}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
-    </ScrollView>
+
+      {/* ACTION BUTTONS (2×2 GRID) */}
+      <View style={resultStyles.actionsContainer}>
+        <TouchableOpacity
+          style={[
+            resultStyles.actionButton,
+            resultStyles.primaryButton,
+            resultStyles.halfWidthButton,
+          ]}
+          onPress={handlePlayAgain}
+        >
+          <Text style={resultStyles.primaryButtonText}>Play Again</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            resultStyles.actionButton,
+            resultStyles.secondaryButton,
+            resultStyles.halfWidthButton,
+          ]}
+          onPress={handleViewLeaderboard}
+        >
+          <Text style={resultStyles.secondaryButtonText}>Leaderboard</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            resultStyles.actionButton,
+            resultStyles.secondaryButton,
+            resultStyles.halfWidthButton,
+          ]}
+          onPress={handleViewHistory}
+        >
+          <Text style={resultStyles.secondaryButtonText}>Run History</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            resultStyles.actionButton,
+            resultStyles.tertiaryButton,
+            resultStyles.halfWidthButton,
+          ]}
+          onPress={handleMainMenu}
+        >
+          <Text style={resultStyles.tertiaryButtonText}>Main Menu</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
@@ -249,260 +240,205 @@ const resultStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0b2447',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  content: {
-    padding: 20,
+  topSection: {
+    flex: 1,
   },
+
+  // Header
   header: {
     alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 8,
   },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 2,
+  },
   subtitle: {
-    fontSize: 18,
+    fontSize: 14,
     color: '#a0c1d1',
   },
   defeatTitle: {
     color: '#ff4444',
   },
   victorySubtext: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#4caf50',
-    marginTop: 8,
+    marginTop: 4,
     fontWeight: '600',
+    textAlign: 'center',
   },
   defeatSubtext: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#ff8888',
-    marginTop: 8,
+    marginTop: 4,
     fontWeight: '600',
+    textAlign: 'center',
   },
   dailyBadge: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#ffd700',
-    marginBottom: 10,
+    marginBottom: 4,
     textAlign: 'center',
   },
   bonusText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: 'bold',
     color: '#4caf50',
-    marginTop: 8,
+    marginTop: 4,
     textAlign: 'center',
   },
-  scoreCard: {
-    backgroundColor: '#19376d',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    marginBottom: 24,
-    borderWidth: 2,
-    borderColor: '#4a90e2',
-  },
-  scoreLabel: {
-    fontSize: 16,
+  messageText: {
+    fontSize: 11,
     color: '#a0c1d1',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+
+  // Score + Stats
+  mainRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
+  scoreCard: {
+    flex: 0.9,
+    backgroundColor: '#19376d',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#4a90e2',
+    marginRight: 6,
+  },
+  scoreLabel: {
+    fontSize: 12,
+    color: '#a0c1d1',
+    marginBottom: 2,
+  },
   scoreValue: {
-    fontSize: 56,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#4a90e2',
   },
   rankText: {
-    fontSize: 18,
+    fontSize: 12,
     color: '#ffd700',
-    marginTop: 12,
+    marginTop: 4,
     fontWeight: 'bold',
   },
-  statsGrid: {
+
+  statsColumn: {
+    flex: 1.1,
+  },
+  statRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 4,
   },
   statBox: {
-    width: '48%',
+    flex: 1,
     backgroundColor: '#19376d',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
     alignItems: 'center',
-    marginBottom: 12,
+    marginHorizontal: 2,
   },
   statValue: {
-    fontSize: 32,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 8,
+    marginBottom: 2,
   },
   accuracyValue: {
     color: '#4caf50',
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 10,
     color: '#a0c1d1',
   },
-  messageCard: {
+
+  // Compact Rewards
+  compactRewardsCard: {
     backgroundColor: '#19376d',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-    alignItems: 'center',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginTop: 4,
   },
-  messageTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#4a90e2',
-    marginBottom: 8,
-  },
-  messageText: {
-    fontSize: 16,
-    color: '#a0c1d1',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  rewardsCard: {
-    backgroundColor: '#19376d',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-  },
-  rewardsTitle: {
-    fontSize: 20,
+  compactRewardsTitle: {
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 16,
-    textAlign: 'center',
+    marginBottom: 4,
   },
-  rewardsList: {
-    gap: 12,
-  },
-  rewardItem: {
+  compactRewardsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0b2447',
-    borderRadius: 8,
-    padding: 12,
+    marginBottom: 2,
   },
   rewardIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  rewardText: {
     fontSize: 16,
+    marginRight: 6,
+  },
+  compactRewardsText: {
+    fontSize: 11,
     color: '#fff',
     flex: 1,
   },
+
+  // Buttons
   actionsContainer: {
-    gap: 12,
-    marginBottom: 32,
+    marginTop: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   actionButton: {
-    padding: 16,
-    borderRadius: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
     alignItems: 'center',
+    marginBottom: 6,
+  },
+  halfWidthButton: {
+    width: '48%',
   },
   primaryButton: {
     backgroundColor: '#4a90e2',
   },
   secondaryButton: {
     backgroundColor: '#19376d',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#4a90e2',
   },
   tertiaryButton: {
     backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#a0c1d1',
   },
   primaryButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   secondaryButtonText: {
     color: '#4a90e2',
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: 'bold',
   },
   tertiaryButtonText: {
     color: '#a0c1d1',
-    fontSize: 16,
-  },
-  // Rewards section styles
-  rewardsSection: {
-    backgroundColor: '#19376d',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-    borderWidth: 2,
-    borderColor: '#ffd700',
-  },
-  rewardsTitle: {
-    fontSize: 24,
+    fontSize: 13,
     fontWeight: 'bold',
-    color: '#ffd700',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  rewardsSubtitle: {
-    fontSize: 14,
-    color: '#a0c1d1',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  rewardsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    gap: 12,
-  },
-  rewardCard: {
-    width: '45%',
-    backgroundColor: '#0b2447',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 2,
-  },
-  raritycommon: {
-    borderColor: '#9e9e9e',
-  },
-  rarityuncommon: {
-    borderColor: '#4caf50',
-  },
-  rarityrare: {
-    borderColor: '#4a90e2',
-  },
-  rarityepic: {
-    borderColor: '#9c27b0',
-  },
-  raritylegendary: {
-    borderColor: '#ffd700',
-  },
-  rewardRarity: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  rewardName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  rewardSlot: {
-    fontSize: 12,
-    color: '#a0c1d1',
-    textAlign: 'center',
   },
 });
 
 export default RunResults;
-
