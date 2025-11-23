@@ -28,6 +28,17 @@ RUN useradd --create-home --shell /bin/bash app
 # Copy dependency files
 COPY --chown=app:app pyproject.toml ./
 
+# Copy project files
+COPY . /app
+
+# Make sure app user owns all files
+RUN chown -R app:app /app
+
+# Now switch to app user
+USER app
+
+RUN poetry install --only=main --no-root
+
 # Switch to app user and install dependencies (creates venv in .venv)
 USER app
 RUN poetry install --only=main --no-root

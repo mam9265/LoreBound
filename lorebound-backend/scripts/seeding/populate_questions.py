@@ -12,8 +12,6 @@ import sys
 import argparse
 from pathlib import Path
 
-# Add parent directory to path for imports (go up two levels from seeding/)
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from app.repositories.base import AsyncSessionLocal
 from app.repositories.content_repo import ContentRepository
